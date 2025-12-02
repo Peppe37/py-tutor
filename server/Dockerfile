@@ -1,5 +1,5 @@
 # Usa Python leggero
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Evita di scrivere file .pyc e bufferizza i log
 ENV PYTHONDONTWRITEBYTECODE=1
