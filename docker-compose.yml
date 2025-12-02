@@ -1,0 +1,32 @@
+services:
+  # 1. Backend API (FastAPI)
+  backend:
+    build: ./server
+    container_name: py-tutor-backend
+    restart: unless-stopped
+    env_file: ./server/.env
+    networks:
+      - npm_network
+    # NESSUN 'ports' qui! Il container è chiuso.
+    # Solo chi è nella rete 'npm_network' può parlargli sulla porta 8010.
+
+  # 2. Frontend (React)
+  # Per semplicità, in produzione usiamo un'immagine Node leggera che serve la build
+  frontend:
+    image: node:18-alpine
+    container_name: py-tutor-frontend
+    working_dir: /app
+    volumes:
+      - ./client:/app
+    # In produzione buildiamo e serviamo con un server statico leggero 'serve'
+    command: >
+      sh -c "npm install && npm run build && npx serve -s dist -l 3000"
+    networks:
+      - npm_network
+    environment:
+      - VITE_API_URL=/api
+
+networks:
+  npm_network:
+    external:
+      name: npm-prod_default # La tua rete esistente
