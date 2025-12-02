@@ -1,134 +1,115 @@
-🐍 PyTutor - AI-Powered Python Learning Environment
-===================================================
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-blue)
+![Python](https://img.shields.io/badge/Backend-FastAPI-green)
+![Docker](https://img.shields.io/badge/Deploy-Docker-2496ED)
+![Status](https://img.shields.io/badge/Status-Active%20Development-success)
 
-**PyTutor** è un ambiente di sviluppo (IDE) interattivo basato sul web progettato per l'apprendimento del linguaggio Python. A differenza dei classici editor, PyTutor integra un **Tutor AI Socratico** che, invece di fornire la soluzione agli errori, guida lo studente verso la comprensione del problema attraverso suggerimenti e spiegazioni concettuali.
+# **🐍 PyTutor \- AI-Powered Python Learning Environment**
 
-Il codice Python viene eseguito interamente nel browser grazie a **Pyodide** (WebAssembly), garantendo velocità e sicurezza, mentre l'AI è gestita da un backend leggero che protegge le API Key.
+**PyTutor** is a web-based interactive development environment (IDE) designed for learning Python. Unlike classic editors, PyTutor integrates a **Socratic AI Tutor** which, instead of providing the solution to errors, guides the student towards understanding the problem through hints and conceptual explanations.
 
-✨ Funzionalità Principali
--------------------------
+Python code is executed entirely in the browser thanks to **Pyodide** (WebAssembly), ensuring speed and security, while the AI is managed by a lightweight backend that protects API Keys.
 
-*   **⚡ Esecuzione Client-Side:** Compilazione ed esecuzione Python direttamente nel browser tramite Pyodide.
-    
-*   **🤖 AI Tutor Socratico:** Analisi intelligente degli errori (Traceback) che spiega il "perché" senza spoilerare la soluzione.
-    
-*   **🎨 Editor Professionale:** Basato su Monaco Editor (VS Code engine) con syntax highlighting e IntelliSense.
-    
-*   **📂 File System Locale:** Salvataggio file nel LocalStorage del browser, Download .py e Importazione file locali.
-    
-*   **🌗 UI Moderna:** Interfaccia Responsive, Tema Chiaro/Scuro e supporto multilingua (IT/EN).
-    
-*   **🔒 Privacy:** Nessun codice utente viene salvato sui server (solo l'errore viene inviato all'AI per l'analisi).
-    
+## **✨ Key Features**
 
-🛠️ Tech Stack
---------------
+* **⚡ Client-Side Execution:** Python compilation and execution directly in the browser via Pyodide.  
+* **🤖 Socratic AI Tutor:** Intelligent error analysis (Traceback) that explains "why" without spoiling the solution.  
+* **🎨 Professional Editor:** Based on Monaco Editor (VS Code engine) with syntax highlighting and IntelliSense.  
+* **📂 Local File System:** Save files to browser LocalStorage, Download .py files, and Import local files.  
+* **🌗 Modern UI:** Responsive Interface, Light/Dark Theme, and Multi-language support (IT/EN).  
+* **🔒 Privacy:** No user code is saved on servers (only the error trace is sent to AI for analysis).
 
-### Frontend
+## **🛠️ Tech Stack**
 
-*   **React 18** + **Vite**
-    
-*   **Pyodide** (Python WebAssembly)
-    
-*   **Monaco Editor**
-    
-*   **Lucide React** (Icone)
-    
-*   **Axios**
-    
+### **Frontend**
 
-### Backend (AI Proxy)
+* **React 18** \+ **Vite**  
+* **Pyodide** (Python WebAssembly)  
+* **Monaco Editor**  
+* **Lucide React** (Icons)  
+* **Axios**
 
-*   **Python 3.11**
-    
-*   **FastAPI**
-    
-*   **Ollama** / **OpenAI** (Configurabile)
-    
-*   **Docker** + **Nginx** (Produzione)
-    
+### **Backend (AI Proxy)**
 
-🚀 Installazione e Sviluppo
----------------------------
+* **Python 3.11**  
+* **FastAPI**  
+* **Ollama** / **OpenAI** (Configurable)  
+* **Docker** \+ **Nginx** (Production)
 
-### Prerequisiti
+## **🚀 Installation & Development**
 
-*   Node.js 18+
-    
-*   Python 3.11+
-    
-*   Docker (opzionale, per produzione)
-    
+### **Prerequisites**
 
-### 1\. Setup Locale (Sviluppo)
+* Node.js 18+  
+* Python 3.11+  
+* Docker (optional, for production)
 
-Clona la repository:
+### **1\. Local Setup (Development)**
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   git clone [https://github.com/Peppe37/py-tutor.git](https://github.com/Peppe37/py-tutor.git)  cd py-tutor   `
+Clone the repository:
 
-**Terminale 1: Backend**
+git clone \[https://github.com/Peppe37/py-tutor.git\](https://github.com/Peppe37/py-tutor.git)  
+cd py-tutor
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   cd server  pip install -r requirements.txt  # Crea un file .env basato su .env.example  cp .env.example .env  # Avvia il server  python main.py   `
+**Terminal 1: Backend**
 
-**Terminale 2: Frontend**
+cd server  
+pip install \-r requirements.txt  
+\# Create a .env file based on .env.example  
+cp .env.example .env  
+\# Start the server  
+python main.py
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   cd client  npm install  # Crea .env locale  echo "VITE_API_URL=http://localhost:8010" > .env.development  # Avvia React  npm run dev   `
+**Terminal 2: Frontend**
 
-Visita http://localhost:5173.
+cd client  
+npm install  
+\# Create local .env  
+echo "VITE\_API\_URL=http://localhost:8010" \> .env.development  
+\# Start React  
+npm run dev
 
-### 2\. Deploy in Produzione (Docker)
+Visit http://localhost:5173.
 
-Per avviare l'intera stack su un server VPS:
+### **2\. Production Deploy (Docker)**
 
-1.  Configura il file server/.env con le tue chiavi di produzione.
-    
-2.  Esegui:
-    
+To start the entire stack on a VPS server:
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   docker compose up -d --build   `
+1. Configure the server/.env file with your production keys.  
+2. Run:
 
-Il servizio sarà esposto internamente. Utilizzare un Reverse Proxy (come Nginx Proxy Manager) per esporre il frontend sulla porta 80/443.
+docker compose up \-d \--build
 
-⚖️ Licenza, Termini e Citazioni
--------------------------------
+The service will be exposed internally. Use a Reverse Proxy (like Nginx Proxy Manager) to expose the frontend on port 80/443.
 
-Questo progetto è distribuito sotto licenza **MIT**.
+## **⚖️ License, Terms, and Citations**
 
-### Condizioni di Utilizzo
+This project is distributed under the **MIT** license.
 
-La licenza MIT permette l'utilizzo commerciale, la modifica e la distribuzione del software. Tuttavia, per rispetto del lavoro svolto e come condizione etica di utilizzo di questo open source:
+### **Terms of Use**
 
-1.  **Attribuzione Obbligatoria:** Se utilizzi questo codice (o parti sostanziali di esso) in progetti personali, accademici o commerciali, **devi mantenere il file LICENSE originale** includendo il copyright di Giuseppe Lapietra.
-    
-2.  _"Powered by PyTutor Core developed by Giuseppe Lapietra"_
-    
+The MIT license allows commercial use, modification, and distribution of the software. However, out of respect for the work done and as an ethical condition for using this open source project:
 
-La rimozione delle intestazioni di copyright dal codice sorgente costituisce una violazione della licenza.
+1. **Mandatory Attribution:** If you use this code (or substantial parts of it) in personal, academic, or commercial projects, **you must maintain the original LICENSE file** including the copyright of Giuseppe Lapietra.  
+2. **Visible Citation:** If the project is used for commercial purposes or published online, a visible citation (e.g., in the footer or "Credits" page) with a link to this repository is appreciated:*"Powered by PyTutor Core developed by Giuseppe Lapietra"*
 
-🤝 Contribuire
---------------
+Removing copyright headers from the source code constitutes a violation of the license.
 
-I contributi sono benvenuti! Per modifiche maggiori, per favore apri prima una Issue per discutere cosa vorresti cambiare.
+## **🤝 Contributing**
 
-1.  Forka il progetto
-    
-2.  Crea il tuo branch delle feature (git checkout -b feature/AmazingFeature)
-    
-3.  Committa i tuoi cambiamenti (git commit -m 'Add some AmazingFeature')
-    
-4.  Pusha sul branch (git push origin feature/AmazingFeature)
-    
-5.  Apri una Pull Request
-    
+Contributions are welcome\! For major changes, please open an Issue first to discuss what you would like to change.
 
-📞 Contatti
------------
+1. Fork the project  
+2. Create your feature branch (git checkout \-b feature/AmazingFeature)  
+3. Commit your changes (git commit \-m 'Add some AmazingFeature')  
+4. Push to the branch (git push origin feature/AmazingFeature)  
+5. Open a Pull Request
+
+## **📞 Contacts**
 
 **Giuseppe Lapietra**
 
-*   📧 Email: lapietra.giu@gmail.com
-    
-*   🐙 GitHub: [@Peppe37](https://github.com/Peppe37)
-    
+* 📧 Email: lapietra.giu@gmail.com  
+* 🐙 GitHub: [@Peppe37](https://github.com/Peppe37)
 
-_Created with ❤️ & Python._
+*Created with ❤️ & Python.*
