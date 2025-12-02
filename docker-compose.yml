@@ -1,32 +1,27 @@
 services:
-  # 1. Backend API (FastAPI)
+  # --- BACKEND (Python FastAPI) ---
   backend:
     build: ./server
     container_name: py-tutor-backend
     restart: unless-stopped
-    env_file: ./server/.env
+    # Carica le variabili segrete dal file server/.env sul VPS
+    env_file:
+      - ./server/.env
     networks:
       - npm_network
-    # NESSUN 'ports' qui! Il container è chiuso.
-    # Solo chi è nella rete 'npm_network' può parlargli sulla porta 8010.
 
-  # 2. Frontend (React)
-  # Per semplicità, in produzione usiamo un'immagine Node leggera che serve la build
+  # --- FRONTEND (React + Nginx) ---
   frontend:
-    image: node:18-alpine
+    build: ./client
     container_name: py-tutor-frontend
-    working_dir: /app
-    volumes:
-      - ./client:/app
-    # In produzione buildiamo e serviamo con un server statico leggero 'serve'
-    command: >
-      sh -c "npm install && npm run build && npx serve -s dist -l 3000"
+    restart: unless-stopped
     networks:
       - npm_network
-    environment:
-      - VITE_API_URL=/api
+    depends_on:
+      - backend
 
+# Colleghiamo i container alla rete di Nginx Proxy Manager
 networks:
   npm_network:
     external:
-      name: npm-prod_default # La tua rete esistente
+      name: npm-prod_default
