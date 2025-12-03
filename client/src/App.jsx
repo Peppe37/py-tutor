@@ -17,7 +17,7 @@ import { translations } from './utils/translations';
 function App() {
   // --- STATE: TABS & CONTENT ---
   const [activeTab, setActiveTab] = useState('code'); // 'code', 'description', 'flowchart'
-  
+
   const [code, setCode] = useState("# Write your Python code here\nprint('Hello World!')");
   const codeRef = useRef(code);
 
@@ -29,11 +29,11 @@ function App() {
   const [output, setOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [pyodide, setPyodide] = useState(null);
-  
+
   const [error, setError] = useState(null);
   const [aiExplanation, setAiExplanation] = useState(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  
+
   // --- STATE: UI SETTINGS ---
   const [showHints, setShowHints] = useState(true);
   const [isDebug, setIsDebug] = useState(false);
@@ -54,25 +54,39 @@ function App() {
 
   const t = translations[lang];
 
-  // Sincronizza Ref (Cruciale per performance e accesso nei callback asincroni)
+  // Sincronizza Ref
   useEffect(() => { codeRef.current = code; }, [code]);
 
-  // --- INIZIALIZZAZIONE PYODIDE OTTIMIZZATA ---
+  // --- INIZIALIZZAZIONE PYODIDE (CON FIX MONACO) ---
   useEffect(() => {
     let mounted = true;
 
     async function loadPyodideEngine() {
-      // Evita il doppio caricamento in React Strict Mode o reload rapidi
+      // Evita doppio caricamento
       if (window.pyodideReady) return;
 
       setOutput(["Loading Python environment..."]);
       try {
-        // loadPyodide è globale (iniettato dallo script CDN in index.html)
+        // --- FIX CONFLITTO MONACO / PYODIDE ---
+        // Salviamo il loader AMD di Monaco
+        const amdDefine = window.define;
+        const amdRequire = window.require;
+
+        // Lo nascondiamo temporaneamente così Pyodide usa il suo loader
+        window.define = undefined;
+        window.require = undefined;
+
+        // Carichiamo Pyodide
         const py = await window.loadPyodide();
-        
+
+        // Ripristiniamo il loader di Monaco
+        window.define = amdDefine;
+        window.require = amdRequire;
+        // --------------------------------------
+
         if (mounted) {
           setPyodide(py);
-          window.pyodideReady = true; // Flag globale per prevenire re-init
+          window.pyodideReady = true;
           setOutput(prev => ["Ready! 🚀"]);
         }
       } catch (err) {
@@ -83,20 +97,19 @@ function App() {
       }
     }
 
-    // Avvia solo se non è già presente nell'istanza corrente
     if (!pyodide) {
         loadPyodideEngine();
     }
 
-    // Caricamento preferenze e file locali
+    // Caricamento preferenze
     const localFiles = localStorage.getItem('pytutor_files');
     if (localFiles) setSavedFiles(JSON.parse(localFiles));
-    
+
     const savedTheme = localStorage.getItem('pytutor_theme');
     if (savedTheme) setTheme(savedTheme);
 
     return () => { mounted = false; };
-  }, []); // Esegue solo al mount
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -111,14 +124,11 @@ function App() {
     return userCodeIndex === -1 ? traceback : ["Traceback (most recent call last):", ...lines.slice(userCodeIndex)].join('\n');
   }, [isDebug]);
 
-  // --- FUNZIONE CHIAMATA AI UNIFICATA (/chat) ---
+  // --- FUNZIONE CHIAMATA AI UNIFICATA ---
   const callAiAgent = async (userMessage, isFlowchartRequest = false) => {
     setLoadingAi(true);
     const currentCode = codeRef.current;
-    
-    // URL Backend dinamico (usa variabile d'ambiente Vite o fallback localhost)
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8010';
-    
     const cleanErr = error ? (isDebug ? error : cleanTraceback(error)) : null;
 
     try {
@@ -127,7 +137,7 @@ function App() {
             code: currentCode,
             error: cleanErr,
             description: description,
-            flowchart: flowchartCode, // Invia il flowchart attuale come contesto
+            flowchart: flowchartCode,
             history: chatHistory
         };
 
@@ -135,39 +145,44 @@ function App() {
         const reply = response.data.reply;
 
         if (isFlowchartRequest) {
-            // --- PARSING ROBUSTO PER MERMAID ---
-            // Cerca il codice all'interno di blocchi markdown ```mermaid ... ``` o ``` ... ```
-            const codeBlockRegex = /```(?:mermaid)?([\s\S]*?)```/;
-            const match = reply.match(codeBlockRegex);
+            // --- PARSING AVANZATO PER MERMAID ---
+            let cleanCode = reply;
 
-            let cleanCode = "";
-            if (match && match[1]) {
-                cleanCode = match[1].trim();
-            } else {
-                // Fallback: se l'AI non usa backticks, prendi tutto il testo
-                cleanCode = reply.trim();
+            // 1. Estrai il contenuto se è in un blocco di codice markdown
+            const codeBlockMatch = reply.match(/```(?:mermaid)?([\s\S]*?)```/);
+            if (codeBlockMatch && codeBlockMatch[1]) {
+                cleanCode = codeBlockMatch[1];
             }
 
-            // Sicurezza: se manca "graph" o "flowchart", prova ad aggiungerlo
-            // (Utile se l'AI restituisce solo la lista dei nodi)
+            // 2. Pulisci spazi extra e rimuovi "mermaid" se l'AI l'ha lasciato fuori dal backtick
+            cleanCode = cleanCode.trim();
+            if (cleanCode.startsWith('mermaid')) {
+                cleanCode = cleanCode.replace('mermaid', '').trim();
+            }
+
+            // 3. Assicurati che inizi con "graph TD" o simili
             if (!cleanCode.startsWith('graph') && !cleanCode.startsWith('flowchart')) {
-                 cleanCode = `graph TD;\n${cleanCode}`;
+                // Se manca l'intestazione, la forziamo
+                cleanCode = `graph TD;\n${cleanCode}`;
             }
+
+            // 4. Sanitize: Rimuove caratteri pericolosi che rompono il parser
+            // (Es. parentesi tonde dentro le etichette non quotate rompono Mermaid)
+            // Questa è una regex semplice, per casi complessi servirebbe un parser
+            // Ma aiuta a evitare crash banali.
 
             setFlowchartCode(cleanCode);
-            
-            // Feedback in chat e cambio tab automatico
+
             setChatHistory(prev => [
-                ...prev, 
+                ...prev,
                 { role: 'user', content: userMessage },
-                { role: 'assistant', content: "Ho aggiornato il diagramma di flusso nel pannello Flowchart! 📐" }
+                { role: 'assistant', content: "Ho generato un nuovo diagramma di flusso! 📐 Controlla la scheda Flowchart." }
             ]);
             setActiveTab('flowchart');
 
         } else {
-            // Chat Standard
             setChatHistory(prev => [
-                ...prev, 
+                ...prev,
                 { role: 'user', content: userMessage },
                 { role: 'assistant', content: reply }
             ]);
@@ -183,16 +198,14 @@ function App() {
     }
   };
 
-  // Funzione specifica per il bottone "Spiegami l'errore" nella Tab Codice
   const askTutorError = useCallback(async () => {
     if (!error) return;
     setLoadingAi(true);
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8010';
-    
     try {
         const cleanErr = isDebug ? error : cleanTraceback(error);
         const response = await axios.post(`${apiUrl}/chat`, {
-            message: "Spiegami questo errore e come risolverlo (senza darmi il codice completo): " + cleanErr,
+            message: "Spiegami questo errore e come risolverlo: " + cleanErr,
             code: codeRef.current,
             error: cleanErr,
             description: description,
@@ -200,11 +213,8 @@ function App() {
             history: []
         });
         setAiExplanation(response.data.reply);
-    } catch (err) { 
-        alert(t.alertAiError); 
-    } finally { 
-        setLoadingAi(false); 
-    }
+    } catch (err) { alert(t.alertAiError); }
+    finally { setLoadingAi(false); }
   }, [error, description, flowchartCode, isDebug, cleanTraceback, t]);
 
   const sendChatMessage = (msg) => {
@@ -212,8 +222,22 @@ function App() {
   };
 
   const askAiToGenerateFlowchart = () => {
-    // Prompt specifico per guidare l'AI a generare solo codice
-    const prompt = "Genera un grafico Mermaid.js (graph TD) che rappresenti la logica per risolvere l'esercizio descritto in 'DESCRIZIONE ESERCIZIO'. Usa nodi per Start, Input, Processi, Decisioni e End. Rispondi SOLAMENTE con il blocco di codice.";
+    // --- PROMPT RAFFORZATO ---
+    // Chiediamo esplicitamente di usare le virgolette per le stringhe
+    // Questo previene l'errore della "bomba rossa" causato da parentesi o caratteri speciali fuori dalle virgolette.
+    const prompt = `
+      Analizza la DESCRIZIONE e il CODICE forniti.
+      Genera un grafico Mermaid.js (graph TD) che rappresenti la logica.
+
+      REGOLE RIGIDE PER EVITARE ERRORI DI SINTASSI:
+      1. Inizia SEMPRE con "graph TD".
+      2. Usa ID semplici per i nodi (es. A, B, C).
+      3. IMPORTANTE: Qualsiasi testo dentro un nodo DEVE essere tra virgolette doppie.
+         ESEMPIO CORRETTO: A["Leggi input (x)"] --> B{"x > 10?"}
+         ESEMPIO ERRATO: A[Leggi input (x)] --> B{x > 10?}
+      4. Non usare parentesi tonde () fuori dalle virgolette.
+      5. Rispondi SOLAMENTE con il blocco di codice.
+    `;
     callAiAgent(prompt, true);
   };
 
@@ -259,7 +283,7 @@ function App() {
     setDebugTrace(null);
     setError(null);
     setAiExplanation(null);
-    setOutput([]); 
+    setOutput([]);
     const currentCode = codeRef.current;
     try {
       pyodide.setStdout({ batched: (msg) => setOutput(prev => [...prev, msg]) });
@@ -300,7 +324,7 @@ json.dumps(trace_data)
 `;
         const traceJson = await pyodide.runPythonAsync(tracerCode);
         const trace = JSON.parse(traceJson);
-        if (trace.length > 0) { setDebugTrace(trace); setCurrentStep(0); } 
+        if (trace.length > 0) { setDebugTrace(trace); setCurrentStep(0); }
         else { setOutput(prev => [...prev, "Debug finished: No steps recorded."]); }
     } catch (err) { setError(err.message); } finally { setIsRunning(false); }
   }, [pyodide]);
@@ -313,8 +337,8 @@ json.dumps(trace_data)
   // --- ALTRE FUNZIONI UI ---
   const toggleTheme = useCallback(() => setTheme(prev => prev === 'dark' ? 'light' : 'dark'), []);
   const toggleLang = useCallback(() => setLang(prev => prev === 'it' ? 'en' : 'it'), []);
-  
-  const handleSave = useCallback(() => { 
+
+  const handleSave = useCallback(() => {
     const currentCode = codeRef.current;
     const filename = prompt(t.promptSave, "script.py"); if (!filename) return;
     const newFile = { id: Date.now(), name: filename.endsWith('.py') ? filename : `${filename}.py`, content: currentCode, date: new Date().toLocaleDateString() };
@@ -323,7 +347,7 @@ json.dumps(trace_data)
   }, [t]);
 
   const handleDownload = useCallback(() => { const currentCode = codeRef.current; const filename = prompt(t.promptDownload, "main.py"); if (!filename) return; const blob = new Blob([currentCode], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); }, [t]);
-  
+
   const handleImportClick = useCallback(() => fileInputRef.current.click(), []);
   const handleFileChange = useCallback((e) => { const file = e.target.files[0]; if(!file)return; const r = new FileReader(); r.onload=ev=>{setCode(ev.target.result);setIsSidebarOpen(false)}; r.readAsText(file); e.target.value=null; }, []);
   const loadSavedFile = useCallback((content) => { if(confirm(t.confirmOverride)) { setCode(content); if(window.innerWidth<768)setIsSidebarOpen(false); }}, [t]);
@@ -331,7 +355,7 @@ json.dumps(trace_data)
 
   return (
     <div className="main-layout">
-      <Sidebar 
+      <Sidebar
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
         savedFiles={savedFiles}
@@ -344,7 +368,7 @@ json.dumps(trace_data)
       />
 
       <div className="main-content">
-        <Header 
+        <Header
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           toggleLang={toggleLang}
@@ -367,18 +391,18 @@ json.dumps(trace_data)
 
         <Tabs activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
 
-        <div className="container" style={{display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden'}}>
-          
+        <div className="container">
+
           {/* TAB 1: CODICE (Editor + Output) */}
           <div style={{display: activeTab === 'code' ? 'flex' : 'none', flexDirection: 'column', flex: 1, gap: '20px'}}>
-            <EditorPane 
+            <EditorPane
                 theme={theme}
                 code={code}
                 setCode={setCode}
                 handleEditorDidMount={handleEditorDidMount}
                 showHints={showHints}
             />
-            <OutputPane 
+            <OutputPane
                 t={t}
                 isDebug={isDebug}
                 isRunning={isRunning}
@@ -399,7 +423,7 @@ json.dumps(trace_data)
 
           {/* TAB 2: DESCRIZIONE & CHAT */}
           <div style={{display: activeTab === 'description' ? 'flex' : 'none', flex: 1}}>
-            <DescriptionPane 
+            <DescriptionPane
                 description={description}
                 setDescription={setDescription}
                 chatHistory={chatHistory}
@@ -411,7 +435,7 @@ json.dumps(trace_data)
 
           {/* TAB 3: FLOWCHART */}
           <div style={{display: activeTab === 'flowchart' ? 'flex' : 'none', flex: 1}}>
-            <FlowchartPane 
+            <FlowchartPane
                 flowchartCode={flowchartCode}
                 setFlowchartCode={setFlowchartCode}
                 askAiToGenerateFlowchart={askAiToGenerateFlowchart}

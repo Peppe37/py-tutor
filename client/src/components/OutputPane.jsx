@@ -2,7 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { StepForward, SkipForward, Square, BrainCircuit } from 'lucide-react';
 import DebugPanel from './DebugPanel';
-import './OutputPane.css'; 
+import './OutputPane.css';
 
 const OutputPane = ({
   t,
@@ -21,7 +21,7 @@ const OutputPane = ({
   askTutor,
   loadingAi
 }) => {
-  
+
   const displayedError = error ? cleanTraceback(error) : null;
 
   return (
@@ -32,24 +32,24 @@ const OutputPane = ({
               {/* CONTROLLI DEBUGGER */}
               {debugTrace && (
                   <div className="debug-controls">
-                      <button className="debug-btn step" onClick={debugPrev} title="Step Back" disabled={currentStep === 0}> 
-                        <StepForward size={18} style={{transform: 'rotate(180deg)'}}/> 
+                      <button className="debug-btn step" onClick={debugPrev} title="Step Back" disabled={currentStep === 0}>
+                        <StepForward size={18} style={{transform: 'rotate(180deg)'}}/>
                       </button>
-                      <button className="debug-btn step" onClick={debugNext} title="Step Over" disabled={currentStep === debugTrace.length - 1}> 
-                        <StepForward size={18} /> 
+                      <button className="debug-btn step" onClick={debugNext} title="Step Over" disabled={currentStep === debugTrace.length - 1}>
+                        <StepForward size={18} />
                       </button>
-                      <button className="debug-btn step" onClick={debugContinue} title="Continue to Next Breakpoint"> 
-                        <SkipForward size={18} /> 
+                      <button className="debug-btn step" onClick={debugContinue} title="Continue to Next Breakpoint">
+                        <SkipForward size={18} />
                       </button>
-                      <button className="debug-btn stop" onClick={debugStop} title="Stop Debugging"> 
-                        <Square size={16} fill="currentColor"/> 
+                      <button className="debug-btn stop" onClick={debugStop} title="Stop Debugging">
+                        <Square size={16} fill="currentColor"/>
                       </button>
                   </div>
               )}
-              
+
               {isDebug && !debugTrace && <span style={{color: 'var(--error-color)', fontSize:'0.75rem', fontWeight:'bold'}}>🐞 DEBUG MODE</span>}
               {debugTrace && <span style={{color: 'var(--warning-color)', fontSize:'0.75rem', fontWeight:'bold'}}>STEP {currentStep + 1}/{debugTrace.length}</span>}
-              
+
               {!debugTrace && (
                 <span style={{color: isRunning ? 'var(--warning-color)' : '#666'}}>
                     {isRunning ? `● ${t.statusExecuting}` : `● ${t.statusIdle}`}
@@ -75,10 +75,10 @@ const OutputPane = ({
             <strong>⛔ {t.traceback}</strong>
             <pre style={{marginTop: '5px', whiteSpace: 'pre-wrap'}}>{displayedError}</pre>
           </div>
-          
+
           {!aiExplanation && (
-            <button 
-              className="explain-btn" 
+            <button
+              className="explain-btn"
               onClick={askTutor}
               disabled={loadingAi}
             >
@@ -86,14 +86,16 @@ const OutputPane = ({
             </button>
           )}
 
-          {aiExplanation && (
-            <div className="ai-response">
-              <strong>🎓 {t.tutorTitle}</strong>
-              <div className="markdown-body">
-                  <ReactMarkdown>{aiExplanation}</ReactMarkdown>
-              </div>
+        {aiExplanation && (
+          <div className="ai-response">
+            <strong>🎓 {t.tutorTitle}</strong>
+            <div className="markdown-body" style={{userSelect: 'text'}}>
+                <ReactMarkdown components={{ code: CodeBlock }}>
+                    {aiExplanation}
+                </ReactMarkdown>
             </div>
-          )}
+          </div>
+        )}
         </div>
       )}
     </div>

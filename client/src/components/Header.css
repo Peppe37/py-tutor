@@ -6,10 +6,10 @@
   padding: 10px 20px;
   flex-shrink: 0;
   width: 100%;
-  max-width: 1400px; 
+  max-width: 1400px;
   margin: 0 auto;
   /* Aggiungiamo un z-index per assicurarci che stia "sopra" se ci fossero sovrapposizioni strane, anche se con flex non dovrebbe servire */
-  z-index: 10; 
+  z-index: 10;
 }
 
 .header-left {
@@ -24,13 +24,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-shrink: 0; 
+  flex-shrink: 0;
   padding-bottom: 2px; /* Un po' di respiro extra per i descender */
 }
 
 .python-logo-svg {
-  display: block; 
-  filter: drop-shadow(0 0 8px rgba(48, 105, 152, 0.4)); 
+  display: block;
+  filter: drop-shadow(0 0 8px rgba(48, 105, 152, 0.4));
 }
 
 .menu-btn {
@@ -56,15 +56,15 @@ h1 {
   font-weight: 700;
   letter-spacing: -0.5px;
   /* MODIFICA: Aumentato line-height per ospitare la 'y' */
-  line-height: 1.2; 
-  white-space: nowrap; 
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .controls {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 }
 
 .divider {
@@ -72,7 +72,7 @@ h1 {
   height: 24px;
   background-color: var(--border-color);
   margin: 0 4px;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 }
 
 /* Tasto PLAY specifico */
@@ -89,28 +89,59 @@ h1 {
 
 /* Light Theme Overrides */
 [data-theme="light"] .menu-btn:hover {
-  background-color: #e5e7eb; 
+  background-color: #e5e7eb;
 }
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   .header {
     height: auto;
-    flex-wrap: wrap; 
+    flex-wrap: wrap;
     gap: 10px;
     padding: 10px 15px;
   }
-  
+
   .brand-container h1 {
-    font-size: 1.3rem; 
+    font-size: 1.3rem;
+  }
+
+  .controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ... codice precedente ... */
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .header {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 10px 15px;
+  }
+
+  .brand-container h1 {
+    font-size: 1.3rem;
   }
 
   .controls {
     width: 100%;
-    overflow-x: auto; 
-    padding-bottom: 5px;
-    justify-content: space-between;
+    overflow-x: auto;
+    padding-bottom: 8px; /* Spazio per la scrollbar */
+    padding-left: 2px;
+    padding-right: 2px;
+    justify-content: flex-start; /* Allinea a sinistra se scrolla */
+    -webkit-overflow-scrolling: touch;
+
+    /* Nasconde scrollbar ma mantiene funzionalità */
+    scrollbar-width: none;
   }
-  
-  .controls::-webkit-scrollbar { display: none; }
+
+  .controls::-webkit-scrollbar {
+    display: none;
+  }
+}
 }
