@@ -13,8 +13,6 @@ PORT = int(os.getenv("PORT", 8010))
 app = FastAPI(debug=config.DEBUG)
 
 # Gestione CORS
-# In produzione su py-test, le richieste arriveranno dallo stesso dominio (tramite proxy)
-# o dal dominio specifico.
 origins = ["*"] if config.DEBUG else [
     "https://py-test.printingarage.it",
     "http://py-test.printingarage.it"
@@ -35,17 +33,43 @@ try:
 except Exception as e:
     print(f"❌ Errore Agente: {e}")
 
-class ExplainRequest(BaseModel):
-    code: str
-    error_message: str
+# Nuovo Modello di Richiesta Completa
+class ChatRequest(BaseModel):
+    message: str          # La domanda dell'utente (o "Spiegami l'errore")
+    code: str             # Il codice nell'editor
+    error: str | None     # L'errore in console (opzionale)
+    description: str      # La traccia dell'esercizio
+    flowchart: str        # Il codice del grafico mermaid
+    history: list         # Cronologia chat (opzionale, per il futuro)
 
-@app.post("/explain") # Nota: Nginx dovrà mappare /api/explain -> /explain
-async def explain_error(req: ExplainRequest):
-    user_content = f"Codice:\n```python\n{req.code}\n```\n\nErrore:\n{req.error_message}"
-    response = bot.ask(system_prompt=PROMPT, user_text=user_content)
-    return {"explanation": response}
+@app.post("/chat")
+async def chat_tutor(req: ChatRequest):
+    # Costruiamo il contesto per il System Prompt in modo dinamico
+    context_info = f"""
+    --- CONTESTO STUDENTE ---
+    CODICE ATTUALE:
+    ```python
+    {req.code}
+    ```
+
+    ERRORE RILEVATO (Se presente):
+    {req.error if req.error else "Nessun errore al momento."}
+
+    DESCRIZIONE ESERCIZIO:
+    {req.description if req.description else "Nessuna traccia fornita."}
+
+    FLOWCHART CORRENTE (Mermaid):
+    {req.flowchart}
+    -------------------------
+    """
+
+    # Uniamo il prompt di sistema base con il contesto attuale
+    full_system_prompt = PROMPT + "\n" + context_info
+
+    # Chiediamo all'agente
+    response = bot.ask(system_prompt=full_system_prompt, user_text=req.message)
+
+    return {"reply": response}
 
 if __name__ == "__main__":
-    # HOST 0.0.0.0 è NECESSARIO dentro Docker per essere raggiunto da NPM.
-    # La sicurezza è garantita dal fatto che NON esporremo la porta nel docker-compose.
     uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=config.DEBUG)

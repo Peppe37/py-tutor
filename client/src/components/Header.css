@@ -1,0 +1,116 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 70px;
+  padding: 10px 20px;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 1400px; 
+  margin: 0 auto;
+  /* Aggiungiamo un z-index per assicurarci che stia "sopra" se ci fossero sovrapposizioni strane, anche se con flex non dovrebbe servire */
+  z-index: 10; 
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+  /* RIMOSSO overflow: hidden per non tagliare la coda della 'y' */
+}
+
+.brand-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0; 
+  padding-bottom: 2px; /* Un po' di respiro extra per i descender */
+}
+
+.python-logo-svg {
+  display: block; 
+  filter: drop-shadow(0 0 8px rgba(48, 105, 152, 0.4)); 
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.menu-btn:hover {
+  background-color: #333;
+}
+
+h1 {
+  font-size: 1.6rem;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  /* MODIFICA: Aumentato line-height per ospitare la 'y' */
+  line-height: 1.2; 
+  white-space: nowrap; 
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0; 
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--border-color);
+  margin: 0 4px;
+  flex-shrink: 0; 
+}
+
+/* Tasto PLAY specifico */
+.icon-btn.play-btn {
+  background-color: var(--accent-color);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.3);
+}
+
+.icon-btn.play-btn:hover:not(:disabled) {
+  background-color: #535bf2;
+}
+
+/* Light Theme Overrides */
+[data-theme="light"] .menu-btn:hover {
+  background-color: #e5e7eb; 
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .header {
+    height: auto;
+    flex-wrap: wrap; 
+    gap: 10px;
+    padding: 10px 15px;
+  }
+  
+  .brand-container h1 {
+    font-size: 1.3rem; 
+  }
+
+  .controls {
+    width: 100%;
+    overflow-x: auto; 
+    padding-bottom: 5px;
+    justify-content: space-between;
+  }
+  
+  .controls::-webkit-scrollbar { display: none; }
+}

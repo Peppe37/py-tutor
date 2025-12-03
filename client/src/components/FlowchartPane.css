@@ -1,0 +1,80 @@
+.flow-pane-layout {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  gap: 20px;
+  
+  padding: 0; 
+  
+  overflow: hidden;
+}
+
+.flow-editor, .flow-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.flow-editor textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 15px;
+  resize: none;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.preview-container {
+  flex: 1;
+  padding: 20px;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-color); 
+}
+
+.mermaid-output svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.render-error {
+  color: var(--error-color);
+  padding: 20px;
+  text-align: center;
+  border: 1px dashed var(--error-color);
+  border-radius: 8px;
+}
+
+.ai-gen-btn {
+  background-color: var(--accent-color);
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ai-gen-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Light Mode */
+[data-theme="light"] .preview-container { background-color: white; }
+
+@media (max-width: 768px) {
+  .flow-pane-layout { flex-direction: column; }
+}

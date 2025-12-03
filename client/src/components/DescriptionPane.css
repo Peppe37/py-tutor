@@ -1,0 +1,155 @@
+.desc-pane-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0; 
+  height: 65vh;
+  gap: 20px;
+  
+  padding: 0; 
+  
+  overflow: hidden;
+}
+
+.desc-section, .chat-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%; /* Forza l'altezza piena */
+}
+
+.section-title {
+  padding: 10px 15px;
+  background-color: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--accent-color);
+  flex-shrink: 0; /* Impedisce al titolo di schiacciarsi */
+}
+
+.desc-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 15px;
+  resize: none;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.6;
+  overflow-y: auto; /* Scroll per la textarea */
+}
+
+.desc-textarea:focus { outline: none; }
+
+/* CHAT STYLES */
+.chat-history {
+  flex: 1;
+  overflow-y: auto; /* Scroll cruciale qui */
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  scroll-behavior: smooth;
+  height: 0; /* Hack flexbox: forza il ricalcolo dell'altezza disponibile */
+  min-height: 0;
+}
+
+/* ... (Il resto delle classi .chat-msg, .msg-avatar etc rimangono uguali) ... */
+.chat-msg {
+  display: flex;
+  gap: 10px;
+  max-width: 90%;
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.chat-msg.assistant {
+  align-self: flex-start;
+}
+
+.msg-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chat-msg.user .msg-avatar { background-color: var(--accent-color); color: white; }
+.chat-msg.assistant .msg-avatar { background-color: var(--warning-color); color: #1a1a1a; }
+
+.msg-content {
+  background-color: #2a2a2a;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.chat-msg.user .msg-content {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+/* INPUT AREA */
+.chat-input-area {
+  padding: 10px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 10px;
+  background-color: var(--bg-color);
+  flex-shrink: 0; /* Impedisce all'input di sparire */
+}
+
+.chat-input-area textarea {
+  flex: 1;
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px;
+  border-radius: 6px;
+  resize: none;
+  font-family: inherit;
+}
+
+.send-btn {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  width: 40px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.send-btn:disabled { background-color: #333; cursor: not-allowed; }
+
+/* Light Theme */
+[data-theme="light"] .section-title { background-color: #e5e7eb; }
+[data-theme="light"] .msg-content { background-color: #e5e7eb; color: #1f2937; }
+[data-theme="light"] .chat-input-area { background-color: #f3f4f6; }
+[data-theme="light"] .chat-input-area textarea { background-color: white; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .desc-pane-layout { 
+      flex-direction: column; 
+      height: auto; /* Su mobile lascia che si allunghi */
+  }
+  .chat-section {
+      height: 400px; /* Altezza fissa su mobile per scroll */
+  }
+}

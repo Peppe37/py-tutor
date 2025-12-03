@@ -1,0 +1,42 @@
+.tabs-container {
+  display: flex;
+  background-color: var(--sidebar-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 20px;
+  gap: 5px;
+  margin-top: 10px; /* Leggero stacco dall'header */
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 10px 16px; /* Ridotto leggermente padding verticale */
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  border-radius: 6px 6px 0 0; /* Arrotondamento solo sopra */
+  transition: background-color 0.2s, color 0.2s;
+  /* RIMOSSO border-bottom */
+}
+
+/* HOVER: Schiarisce (dark) o Scurisce (light) grazie alla variabile var(--hover-bg) definita in App.css */
+.tab-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--hover-bg);
+}
+
+/* ACTIVE: Più evidente ma flat */
+.tab-btn.active {
+  color: var(--accent-color);
+  background-color: var(--hover-bg); 
+  font-weight: 700;
+}
+
+/* Light Mode Override (Opzionale se vuoi forzare colori specifici qui) */
+[data-theme="light"] .tab-btn:hover {
+  /* Già gestito da var(--hover-bg) in App.css, ma puoi personalizzare */
+}

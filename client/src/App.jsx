@@ -1,400 +1,425 @@
-import { useState, useEffect, useRef } from 'react'
-import Editor from '@monaco-editor/react';
+import { useState, useEffect, useRef, useCallback } from 'react'
 import axios from 'axios';
-// Importiamo le nuove icone: Sun, Moon, Languages
-import { Play, Save, Download, Menu, FolderOpen, Upload, Trash2, X, BrainCircuit, Sun, Moon, Languages } from 'lucide-react';
 import './App.css'
 
-// DIZIONARIO TRADUZIONI
-const translations = {
-  it: {
-    headerTitle: "PyTutor",
-    runBtn: "Esegui",
-    running: "Esecuzione...",
-    hints: "Suggerimenti",
-    sidebarTitle: "Esplora File",
-    noFiles: "Nessun file salvato",
-    importBtn: "Importa .py locale",
-    terminalTitle: "OUTPUT TERMINALE",
-    statusExecuting: "In Esecuzione",
-    statusIdle: "Pronto",
-    waitingOutput: "In attesa di output...",
-    traceback: "Errore rilevato:",
-    explainBtn: "Spiegami l'errore",
-    analyzing: "Analisi in corso...",
-    tutorTitle: "Il Tutor suggerisce:",
-    saveTitle: "Salva nel Browser",
-    downloadTitle: "Scarica file .py",
-    runTitle: "Esegui Codice",
-    confirmOverride: "Caricare questo file sovrascriverà l'editor corrente. Continuare?",
-    confirmDelete: "Sei sicuro di voler eliminare questo file?",
-    promptSave: "Come vuoi chiamare questo file?",
-    promptDownload: "Nome del file da scaricare:",
-    alertAiError: "Errore connessione AI.",
-    fileSaved: "File salvato come"
-  },
-  en: {
-    headerTitle: "PyTutor",
-    runBtn: "Run",
-    running: "Running...",
-    hints: "Hints",
-    sidebarTitle: "File Explorer",
-    noFiles: "No saved files",
-    importBtn: "Import local .py",
-    terminalTitle: "TERMINAL OUTPUT",
-    statusExecuting: "Executing",
-    statusIdle: "Idle",
-    waitingOutput: "Waiting for output...",
-    traceback: "Traceback detected:",
-    explainBtn: "Explain error",
-    analyzing: "Analyzing...",
-    tutorTitle: "Tutor suggests:",
-    saveTitle: "Save to Browser",
-    downloadTitle: "Download .py file",
-    runTitle: "Run Code",
-    confirmOverride: "Loading this file will override the current editor. Continue?",
-    confirmDelete: "Are you sure you want to delete this file?",
-    promptSave: "What do you want to call this file?",
-    promptDownload: "Filename to download:",
-    alertAiError: "AI Connection Error.",
-    fileSaved: "File saved as"
-  }
-};
+// Import Components
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import EditorPane from './components/EditorPane';
+import OutputPane from './components/OutputPane';
+import Tabs from './components/Tabs';
+import DescriptionPane from './components/DescriptionPane';
+import FlowchartPane from './components/FlowchartPane';
+
+// Import Utils
+import { translations } from './utils/translations';
 
 function App() {
-  // Configurazione iniziale (Placeholder in INGLESE come richiesto)
-  const [code, setCode] = useState("# Write your Python code here\nprint('Hello World!')");
+  // --- STATE: TABS & CONTENT ---
+  const [activeTab, setActiveTab] = useState('code'); // 'code', 'description', 'flowchart'
   
-  // Stati Base
+  const [code, setCode] = useState("# Write your Python code here\nprint('Hello World!')");
+  const codeRef = useRef(code);
+
+  const [description, setDescription] = useState("");
+  const [flowchartCode, setFlowchartCode] = useState("graph TD;\n    A[Start] --> B{Errore?};\n    B -- Si --> C[Chiedi AI];\n    B -- No --> D[Festeggia];");
+  const [chatHistory, setChatHistory] = useState([]);
+
+  // --- STATE: EXECUTION & AI ---
   const [output, setOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [pyodide, setPyodide] = useState(null);
+  
   const [error, setError] = useState(null);
   const [aiExplanation, setAiExplanation] = useState(null);
   const [loadingAi, setLoadingAi] = useState(false);
+  
+  // --- STATE: UI SETTINGS ---
   const [showHints, setShowHints] = useState(true);
-
-  // Stati File
+  const [isDebug, setIsDebug] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [savedFiles, setSavedFiles] = useState([]);
   const fileInputRef = useRef(null);
 
-  // NUOVI STATI: TEMA & LINGUA
-  const [theme, setTheme] = useState('dark'); // 'dark' | 'light'
-  const [lang, setLang] = useState('it');     // 'it' | 'en'
+  // --- STATI DEBUGGER ---
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
+  const [breakpoints, setBreakpoints] = useState([]);
+  const [debugTrace, setDebugTrace] = useState(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const decorationsRef = useRef([]);
 
-  // Helper per testi rapidi
+  const [theme, setTheme] = useState('dark');
+  const [lang, setLang] = useState('it');
+
   const t = translations[lang];
 
-  // 1. Caricamento Iniziale
+  // Sincronizza Ref (Cruciale per performance e accesso nei callback asincroni)
+  useEffect(() => { codeRef.current = code; }, [code]);
+
+  // --- INIZIALIZZAZIONE PYODIDE OTTIMIZZATA ---
   useEffect(() => {
-    // Pyodide
+    let mounted = true;
+
     async function loadPyodideEngine() {
+      // Evita il doppio caricamento in React Strict Mode o reload rapidi
+      if (window.pyodideReady) return;
+
       setOutput(["Loading Python environment..."]);
       try {
+        // loadPyodide è globale (iniettato dallo script CDN in index.html)
         const py = await window.loadPyodide();
-        setPyodide(py);
-        setOutput(prev => [...prev, "Ready! 🚀"]);
+        
+        if (mounted) {
+          setPyodide(py);
+          window.pyodideReady = true; // Flag globale per prevenire re-init
+          setOutput(prev => ["Ready! 🚀"]);
+        }
       } catch (err) {
-        console.error(err);
-        setOutput(prev => [...prev, "❌ Critical Error: Failed to load Pyodide."]);
+        if (mounted) {
+          console.error(err);
+          setOutput(prev => [...prev, "❌ Critical Error: Failed to load Pyodide."]);
+        }
       }
     }
-    loadPyodideEngine();
 
-    // LocalStorage Files
-    const localFiles = localStorage.getItem('pytutor_files');
-    if (localFiles) {
-      setSavedFiles(JSON.parse(localFiles));
+    // Avvia solo se non è già presente nell'istanza corrente
+    if (!pyodide) {
+        loadPyodideEngine();
     }
+
+    // Caricamento preferenze e file locali
+    const localFiles = localStorage.getItem('pytutor_files');
+    if (localFiles) setSavedFiles(JSON.parse(localFiles));
     
-    // Recupera preferenze tema/lingua se esistono (Opzionale)
     const savedTheme = localStorage.getItem('pytutor_theme');
     if (savedTheme) setTheme(savedTheme);
-  }, []);
 
-  // 2. Gestione Tema (Effect per applicare data-theme al body/div principale)
+    return () => { mounted = false; };
+  }, []); // Esegue solo al mount
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('pytutor_theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
+  // --- HELPER PULIZIA ERRORE ---
+  const cleanTraceback = useCallback((traceback) => {
+    if (isDebug) return traceback;
+    const lines = traceback.split('\n');
+    const userCodeIndex = lines.findIndex(line => line.includes('File "<exec>"'));
+    return userCodeIndex === -1 ? traceback : ["Traceback (most recent call last):", ...lines.slice(userCodeIndex)].join('\n');
+  }, [isDebug]);
 
-  const toggleLang = () => {
-    setLang(prev => prev === 'it' ? 'en' : 'it');
-  };
-
-  // 3. Funzioni Gestione File
-  const handleSave = () => {
-    const filename = prompt(t.promptSave, "script.py");
-    if (!filename) return;
-
-    const newFile = {
-      id: Date.now(),
-      name: filename.endsWith('.py') ? filename : `${filename}.py`,
-      content: code,
-      date: new Date().toLocaleDateString()
-    };
-
-    const updatedFiles = [...savedFiles, newFile];
-    setSavedFiles(updatedFiles);
-    localStorage.setItem('pytutor_files', JSON.stringify(updatedFiles));
+  // --- FUNZIONE CHIAMATA AI UNIFICATA (/chat) ---
+  const callAiAgent = async (userMessage, isFlowchartRequest = false) => {
+    setLoadingAi(true);
+    const currentCode = codeRef.current;
     
-    setIsSidebarOpen(true);
-    // Opzionale: alert(t.fileSaved + " " + newFile.name);
-  };
-
-  const handleDownload = () => {
-    const filename = prompt(t.promptDownload, "main.py");
-    if (!filename) return;
+    // URL Backend dinamico (usa variabile d'ambiente Vite o fallback localhost)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8010';
     
-    const finalName = filename.endsWith('.py') ? filename : `${filename}.py`;
-    const blob = new Blob([code], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = finalName;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    const cleanErr = error ? (isDebug ? error : cleanTraceback(error)) : null;
 
-  const handleImportClick = () => {
-    fileInputRef.current.click();
-  };
+    try {
+        const payload = {
+            message: userMessage,
+            code: currentCode,
+            error: cleanErr,
+            description: description,
+            flowchart: flowchartCode, // Invia il flowchart attuale come contesto
+            history: chatHistory
+        };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+        const response = await axios.post(`${apiUrl}/chat`, payload);
+        const reply = response.data.reply;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setCode(e.target.result);
-      setIsSidebarOpen(false);
-    };
-    reader.readAsText(file);
-    event.target.value = null; 
-  };
+        if (isFlowchartRequest) {
+            // --- PARSING ROBUSTO PER MERMAID ---
+            // Cerca il codice all'interno di blocchi markdown ```mermaid ... ``` o ``` ... ```
+            const codeBlockRegex = /```(?:mermaid)?([\s\S]*?)```/;
+            const match = reply.match(codeBlockRegex);
 
-  const loadSavedFile = (fileContent) => {
-    if(confirm(t.confirmOverride)) {
-        setCode(fileContent);
-        if (window.innerWidth < 768) setIsSidebarOpen(false);
+            let cleanCode = "";
+            if (match && match[1]) {
+                cleanCode = match[1].trim();
+            } else {
+                // Fallback: se l'AI non usa backticks, prendi tutto il testo
+                cleanCode = reply.trim();
+            }
+
+            // Sicurezza: se manca "graph" o "flowchart", prova ad aggiungerlo
+            // (Utile se l'AI restituisce solo la lista dei nodi)
+            if (!cleanCode.startsWith('graph') && !cleanCode.startsWith('flowchart')) {
+                 cleanCode = `graph TD;\n${cleanCode}`;
+            }
+
+            setFlowchartCode(cleanCode);
+            
+            // Feedback in chat e cambio tab automatico
+            setChatHistory(prev => [
+                ...prev, 
+                { role: 'user', content: userMessage },
+                { role: 'assistant', content: "Ho aggiornato il diagramma di flusso nel pannello Flowchart! 📐" }
+            ]);
+            setActiveTab('flowchart');
+
+        } else {
+            // Chat Standard
+            setChatHistory(prev => [
+                ...prev, 
+                { role: 'user', content: userMessage },
+                { role: 'assistant', content: reply }
+            ]);
+        }
+        return reply;
+
+    } catch (err) {
+        console.error(err);
+        alert(t.alertAiError || "Errore di connessione all'AI.");
+        return null;
+    } finally {
+        setLoadingAi(false);
     }
   };
 
-  const deleteSavedFile = (e, id) => {
-    e.stopPropagation();
-    if(confirm(t.confirmDelete)) {
-        const updatedFiles = savedFiles.filter(f => f.id !== id);
-        setSavedFiles(updatedFiles);
-        localStorage.setItem('pytutor_files', JSON.stringify(updatedFiles));
+  // Funzione specifica per il bottone "Spiegami l'errore" nella Tab Codice
+  const askTutorError = useCallback(async () => {
+    if (!error) return;
+    setLoadingAi(true);
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8010';
+    
+    try {
+        const cleanErr = isDebug ? error : cleanTraceback(error);
+        const response = await axios.post(`${apiUrl}/chat`, {
+            message: "Spiegami questo errore e come risolverlo (senza darmi il codice completo): " + cleanErr,
+            code: codeRef.current,
+            error: cleanErr,
+            description: description,
+            flowchart: flowchartCode,
+            history: []
+        });
+        setAiExplanation(response.data.reply);
+    } catch (err) { 
+        alert(t.alertAiError); 
+    } finally { 
+        setLoadingAi(false); 
     }
+  }, [error, description, flowchartCode, isDebug, cleanTraceback, t]);
+
+  const sendChatMessage = (msg) => {
+    callAiAgent(msg, false);
   };
 
-  // 4. Esegui Codice
-  const runCode = async () => {
+  const askAiToGenerateFlowchart = () => {
+    // Prompt specifico per guidare l'AI a generare solo codice
+    const prompt = "Genera un grafico Mermaid.js (graph TD) che rappresenti la logica per risolvere l'esercizio descritto in 'DESCRIZIONE ESERCIZIO'. Usa nodi per Start, Input, Processi, Decisioni e End. Rispondi SOLAMENTE con il blocco di codice.";
+    callAiAgent(prompt, true);
+  };
+
+  // --- GESTIONE EDITOR & BREAKPOINTS ---
+  const handleEditorDidMount = useCallback((editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+    editor.onMouseDown((e) => {
+      if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
+        const lineNumber = e.target.position.lineNumber;
+        setBreakpoints(prev => {
+            const exists = prev.includes(lineNumber);
+            return exists ? prev.filter(l => l !== lineNumber) : [...prev, lineNumber];
+        });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+    const newDecorations = [];
+    breakpoints.forEach(line => {
+      newDecorations.push({
+        range: new monacoRef.current.Range(line, 1, line, 1),
+        options: { isWholeLine: false, glyphMarginClassName: 'codicon-breakpoint' }
+      });
+    });
+    if (debugTrace && debugTrace[currentStep]) {
+        const currentLine = debugTrace[currentStep].line;
+        newDecorations.push({
+            range: new monacoRef.current.Range(currentLine, 1, currentLine, 1),
+            options: { isWholeLine: true, className: 'debug-current-line' }
+        });
+        editorRef.current.revealLineInCenter(currentLine);
+    }
+    decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, newDecorations);
+  }, [breakpoints, currentStep, debugTrace]);
+
+  // --- ESECUZIONE NORMALE ---
+  const runCode = useCallback(async () => {
+    if (!pyodide) return;
+    setIsRunning(true);
+    setDebugTrace(null);
+    setError(null);
+    setAiExplanation(null);
+    setOutput([]); 
+    const currentCode = codeRef.current;
+    try {
+      pyodide.setStdout({ batched: (msg) => setOutput(prev => [...prev, msg]) });
+      await pyodide.runPythonAsync(currentCode);
+    } catch (err) { setError(err.message); } finally { setIsRunning(false); }
+  }, [pyodide]);
+
+  // --- ESECUZIONE DEBUG (TRACING) ---
+  const runDebug = useCallback(async () => {
     if (!pyodide) return;
     setIsRunning(true);
     setError(null);
     setAiExplanation(null);
-    setOutput([]); 
-
+    setOutput([]);
+    setDebugTrace(null);
+    const currentCode = codeRef.current;
     try {
-      pyodide.setStdout({ batched: (msg) => setOutput(prev => [...prev, msg]) });
-      await pyodide.runPythonAsync(code);
-    } catch (err) {
-      const errorMsg = err.message;
-      setError(errorMsg);
-    } finally {
-      setIsRunning(false);
-    }
-  };
+        const tracerCode = `
+import sys
+import json
+trace_data = []
+def trace_calls(frame, event, arg):
+    if event != 'line': return trace_calls
+    if frame.f_code.co_name == "<module>" or frame.f_code.co_filename == "<string>":
+        local_vars = {}
+        for k, v in frame.f_locals.items():
+            if not k.startswith('__'):
+                try: local_vars[k] = repr(v)
+                except: local_vars[k] = "<error>"
+        trace_data.append({ "line": frame.f_lineno, "locals": local_vars, "event": "line" })
+    return trace_calls
+user_code = ${JSON.stringify(currentCode)}
+sys.settrace(trace_calls)
+try: exec(user_code, {})
+except Exception as e: trace_data.append({"line": -1, "event": "exception", "message": str(e)})
+finally: sys.settrace(None)
+json.dumps(trace_data)
+`;
+        const traceJson = await pyodide.runPythonAsync(tracerCode);
+        const trace = JSON.parse(traceJson);
+        if (trace.length > 0) { setDebugTrace(trace); setCurrentStep(0); } 
+        else { setOutput(prev => [...prev, "Debug finished: No steps recorded."]); }
+    } catch (err) { setError(err.message); } finally { setIsRunning(false); }
+  }, [pyodide]);
 
-  // 5. AI Tutor
-  const askTutor = async () => {
-    if (!error) return;
-    setLoadingAi(true);
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8010';
-    try {
-      const response = await axios.post(`${apiUrl}/explain`, {
-        code: code,
-        error_message: error,
-        language: lang // Passiamo la lingua al backend se vuoi che l'AI risponda in EN/IT
-      });
-      setAiExplanation(response.data.explanation);
-    } catch (err) {
-      console.error(err);
-      alert(t.alertAiError);
-    } finally {
-      setLoadingAi(false);
-    }
-  };
+  const debugNext = useCallback(() => { if (debugTrace && currentStep < debugTrace.length - 1) setCurrentStep(prev => prev + 1); }, [debugTrace, currentStep]);
+  const debugPrev = useCallback(() => { if (debugTrace && currentStep > 0) setCurrentStep(prev => prev - 1); }, [debugTrace, currentStep]);
+  const debugContinue = useCallback(() => { if (!debugTrace) return; const nextBpIndex = debugTrace.findIndex((step, index) => index > currentStep && breakpoints.includes(step.line)); setCurrentStep(nextBpIndex !== -1 ? nextBpIndex : debugTrace.length - 1); }, [debugTrace, currentStep, breakpoints]);
+  const debugStop = useCallback(() => { setDebugTrace(null); setCurrentStep(0); }, []);
+
+  // --- ALTRE FUNZIONI UI ---
+  const toggleTheme = useCallback(() => setTheme(prev => prev === 'dark' ? 'light' : 'dark'), []);
+  const toggleLang = useCallback(() => setLang(prev => prev === 'it' ? 'en' : 'it'), []);
+  
+  const handleSave = useCallback(() => { 
+    const currentCode = codeRef.current;
+    const filename = prompt(t.promptSave, "script.py"); if (!filename) return;
+    const newFile = { id: Date.now(), name: filename.endsWith('.py') ? filename : `${filename}.py`, content: currentCode, date: new Date().toLocaleDateString() };
+    setSavedFiles(prev => { const updated = [...prev, newFile]; localStorage.setItem('pytutor_files', JSON.stringify(updated)); return updated; });
+    setIsSidebarOpen(true);
+  }, [t]);
+
+  const handleDownload = useCallback(() => { const currentCode = codeRef.current; const filename = prompt(t.promptDownload, "main.py"); if (!filename) return; const blob = new Blob([currentCode], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); }, [t]);
+  
+  const handleImportClick = useCallback(() => fileInputRef.current.click(), []);
+  const handleFileChange = useCallback((e) => { const file = e.target.files[0]; if(!file)return; const r = new FileReader(); r.onload=ev=>{setCode(ev.target.result);setIsSidebarOpen(false)}; r.readAsText(file); e.target.value=null; }, []);
+  const loadSavedFile = useCallback((content) => { if(confirm(t.confirmOverride)) { setCode(content); if(window.innerWidth<768)setIsSidebarOpen(false); }}, [t]);
+  const deleteSavedFile = useCallback((e, id) => { e.stopPropagation(); if(confirm(t.confirmDelete)){ setSavedFiles(prev => { const u = prev.filter(f=>f.id!==id); localStorage.setItem('pytutor_files', JSON.stringify(u)); return u; }); }}, [t]);
 
   return (
     <div className="main-layout">
-      {/* --- SIDEBAR --- */}
-      <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
-        <div className="sidebar-header">{t.sidebarTitle}</div>
-        
-        <ul className="file-list">
-          {savedFiles.length === 0 && <li style={{padding:'20px', color:'#555', fontStyle:'italic', fontSize:'0.85rem', textAlign:'center'}}>{t.noFiles}</li>}
-          {savedFiles.map(file => (
-            <li key={file.id} className="file-item" onClick={() => loadSavedFile(file.content)}>
-              <div style={{display:'flex', alignItems:'center', gap:'10px', overflow:'hidden'}}>
-                <FolderOpen size={16} color="var(--accent-color)" />
-                <span title={file.name}>{file.name}</span>
-              </div>
-              <button className="delete-btn" onClick={(e) => deleteSavedFile(e, file.id)}>
-                <Trash2 size={14} />
-              </button>
-            </li>
-          ))}
-        </ul>
+      <Sidebar 
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
+        savedFiles={savedFiles}
+        loadSavedFile={loadSavedFile}
+        deleteSavedFile={deleteSavedFile}
+        handleImportClick={handleImportClick}
+        fileInputRef={fileInputRef}
+        handleFileChange={handleFileChange}
+        t={t}
+      />
 
-        <div className="import-section">
-          <input 
-            type="file" 
-            accept=".py,.txt" 
-            ref={fileInputRef} 
-            style={{display:'none'}} 
-            onChange={handleFileChange} 
-          />
-          <button className="import-btn" onClick={handleImportClick}>
-            <Upload size={16} /> {t.importBtn}
-          </button>
-        </div>
-      </div>
-
-      {/* --- MAIN CONTENT --- */}
       <div className="main-content">
-        <div className="header">
-          <div className="header-left">
-            <button className="menu-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-                {isSidebarOpen ? <X size={24}/> : <Menu size={24}/>}
-            </button>
-            <h1>🐍 {t.headerTitle}</h1>
-          </div>
+        <Header 
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          toggleLang={toggleLang}
+          lang={lang}
+          toggleTheme={toggleTheme}
+          theme={theme}
+          handleSave={handleSave}
+          handleDownload={handleDownload}
+          showHints={showHints}
+          setShowHints={setShowHints}
+          isDebug={isDebug}
+          setIsDebug={setIsDebug}
+          setDebugTrace={setDebugTrace}
+          runCode={runCode}
+          runDebug={runDebug}
+          pyodide={pyodide}
+          isRunning={isRunning}
+          t={t}
+        />
+
+        <Tabs activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
+
+        <div className="container" style={{display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden'}}>
           
-          <div className="controls">
-              {/* Language Switcher */}
-              <button className="icon-btn" onClick={toggleLang} title="Switch Language" style={{width: 'auto', padding: '0 10px', fontSize: '0.8rem', fontWeight: 'bold'}}>
-                <Languages size={18} style={{marginRight: 5}}/> {lang.toUpperCase()}
-              </button>
-
-              {/* Theme Toggle */}
-              <button className="icon-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}>
-                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
-
-              <div style={{width: 1, height: 25, background: 'var(--border-color)', margin: '0 5px'}}></div>
-
-              {/* Toggle Hints */}
-              <div className="toggle-container">
-                  <span className="toggle-label">{t.hints}</span>
-                  <label className="switch">
-                      <input 
-                          type="checkbox" 
-                          checked={showHints} 
-                          onChange={(e) => setShowHints(e.target.checked)} 
-                      />
-                      <span className="slider round"></span>
-                  </label>
-              </div>
-
-              {/* Toolbar Buttons */}
-              <button className="icon-btn" onClick={handleSave} title={t.saveTitle}>
-                <Save size={20} />
-              </button>
-              
-              <button className="icon-btn" onClick={handleDownload} title={t.downloadTitle}>
-                <Download size={20} />
-              </button>
-
-              <button 
-                onClick={runCode} 
-                disabled={!pyodide || isRunning} 
-                className="icon-btn play-btn"
-                title={t.runTitle}
-              >
-                 {isRunning ? '...' : <Play size={24} fill="white" />}
-                 {/* Opzionale: mostrare testo su desktop */}
-                 <span style={{marginLeft: 8, display: window.innerWidth < 600 ? 'none' : 'inline'}}>{t.runBtn}</span>
-              </button>
-          </div>
-        </div>
-
-        <div className="container">
-          {/* EDITOR */}
-          <div className="editor-pane">
-            <Editor
-              height="100%"
-              defaultLanguage="python"
-              // Cambio tema dinamico: Monaco ha 'vs-dark' e 'light'
-              theme={theme === 'dark' ? "vs-dark" : "light"}
-              value={code}
-              onChange={(value) => setCode(value)}
-              options={{ 
-                  minimap: { enabled: false }, 
-                  fontSize: 16, 
-                  scrollBeyondLastLine: false,
-                  padding: { top: 20, bottom: 20 },
-                  automaticLayout: true,
-                  quickSuggestions: showHints, 
-                  suggestOnTriggerCharacters: showHints, 
-                  parameterHints: { enabled: showHints },
-                  wordBasedSuggestions: showHints,
-                  hover: { enabled: showHints },
-              }}
+          {/* TAB 1: CODICE (Editor + Output) */}
+          <div style={{display: activeTab === 'code' ? 'flex' : 'none', flexDirection: 'column', flex: 1, gap: '20px'}}>
+            <EditorPane 
+                theme={theme}
+                code={code}
+                setCode={setCode}
+                handleEditorDidMount={handleEditorDidMount}
+                showHints={showHints}
+            />
+            <OutputPane 
+                t={t}
+                isDebug={isDebug}
+                isRunning={isRunning}
+                debugTrace={debugTrace}
+                currentStep={currentStep}
+                debugPrev={debugPrev}
+                debugNext={debugNext}
+                debugContinue={debugContinue}
+                debugStop={debugStop}
+                output={output}
+                error={error}
+                cleanTraceback={cleanTraceback}
+                aiExplanation={aiExplanation}
+                askTutor={askTutorError}
+                loadingAi={loadingAi}
             />
           </div>
 
-          {/* OUTPUT */}
-          <div className="output-pane">
-              <div className="output-header">
-                  <span>{t.terminalTitle}</span>
-                  <span style={{color: isRunning ? 'var(--warning-color)' : '#666'}}>
-                      {isRunning ? `● ${t.statusExecuting}` : `● ${t.statusIdle}`}
-                  </span>
-              </div>
-
-            <div className="console-output">
-              {output.length === 0 && !error && <span style={{color:'#888', fontStyle:'italic'}}>{t.waitingOutput}</span>}
-              {output.map((line, i) => (
-                <div key={i} className="log-line">{line}</div>
-              ))}
-            </div>
-
-            {/* Error Area */}
-            {error && (
-              <div className="error-section">
-                <div className="error-msg">
-                  <strong>⛔ {t.traceback}</strong>
-                  <pre style={{marginTop: '5px', whiteSpace: 'pre-wrap'}}>{error}</pre>
-                </div>
-                
-                {!aiExplanation && (
-                  <button 
-                    className="explain-btn" 
-                    onClick={askTutor}
-                    disabled={loadingAi}
-                  >
-                    {loadingAi ? t.analyzing : <><BrainCircuit size={18}/> {t.explainBtn}</>}
-                  </button>
-                )}
-
-                {aiExplanation && (
-                  <div className="ai-response">
-                    <strong>🎓 {t.tutorTitle}</strong><br/>
-                    <div style={{marginTop: '8px'}}>{aiExplanation}</div>
-                  </div>
-                )}
-              </div>
-            )}
+          {/* TAB 2: DESCRIZIONE & CHAT */}
+          <div style={{display: activeTab === 'description' ? 'flex' : 'none', flex: 1}}>
+            <DescriptionPane 
+                description={description}
+                setDescription={setDescription}
+                chatHistory={chatHistory}
+                sendChatMessage={sendChatMessage}
+                isAiLoading={loadingAi}
+                t={t}
+            />
           </div>
+
+          {/* TAB 3: FLOWCHART */}
+          <div style={{display: activeTab === 'flowchart' ? 'flex' : 'none', flex: 1}}>
+            <FlowchartPane 
+                flowchartCode={flowchartCode}
+                setFlowchartCode={setFlowchartCode}
+                askAiToGenerateFlowchart={askAiToGenerateFlowchart}
+                isAiLoading={loadingAi}
+                theme={theme}
+            />
+          </div>
+
         </div>
       </div>
     </div>
