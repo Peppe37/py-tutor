@@ -32,7 +32,7 @@
 /* ACTIVE: Più evidente ma flat */
 .tab-btn.active {
   color: var(--accent-color);
-  background-color: var(--hover-bg); 
+  background-color: var(--hover-bg);
   font-weight: 700;
 }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Trash2, Upload } from 'lucide-react'; // Rimosso FolderOpen
-import './Sidebar.css'; 
+import './Sidebar.css';
 
 // Componente SVG per l'icona del file .py sfumato
 const PyFileIconSvg = ({ size = 18 }) => (
@@ -19,30 +19,30 @@ const PyFileIconSvg = ({ size = 18 }) => (
   </svg>
 );
 
-const Sidebar = ({ 
-  isOpen, 
-  setIsOpen, 
-  savedFiles, 
-  loadSavedFile, 
-  deleteSavedFile, 
-  handleImportClick, 
-  fileInputRef, 
-  handleFileChange, 
-  t 
+const Sidebar = ({
+  isOpen,
+  setIsOpen,
+  savedFiles,
+  loadSavedFile,
+  deleteSavedFile,
+  handleImportClick,
+  fileInputRef,
+  handleFileChange,
+  t
 }) => {
   return (
     <div className={`sidebar ${!isOpen ? 'closed' : ''}`}>
       <div className="sidebar-header">
         <span>{t.sidebarTitle}</span>
-        <button 
-          className="icon-btn" 
-          onClick={() => setIsOpen(false)} 
+        <button
+          className="icon-btn"
+          onClick={() => setIsOpen(false)}
           style={{border:'none', background:'transparent'}}
-        > 
-          <X size={20} /> 
+        >
+          <X size={20} />
         </button>
       </div>
-      
+
       <ul className="file-list">
         {savedFiles.length === 0 && (
           <li style={{padding:'20px', color:'#555', textAlign:'center', fontSize:'0.85rem'}}>
@@ -51,28 +51,28 @@ const Sidebar = ({
         )}
         {savedFiles.map(file => (
           <li key={file.id} className="file-item" onClick={() => loadSavedFile(file.content)}>
-            <div style={{display:'flex', alignItems:'center', gap:'10px', overflow:'hidden'}}> 
+            <div style={{display:'flex', alignItems:'center', gap:'10px', overflow:'hidden'}}>
               {/* MODIFICA: Sostituito FolderOpen con la nuova icona SVG */}
-              <PyFileIconSvg size={20} /> 
-              <span title={file.name} style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{file.name}</span> 
+              <PyFileIconSvg size={20} />
+              <span title={file.name} style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{file.name}</span>
             </div>
-            <button className="delete-btn" onClick={(e) => deleteSavedFile(e, file.id)}> 
-              <Trash2 size={14} /> 
+            <button className="delete-btn" onClick={(e) => deleteSavedFile(e, file.id)}>
+              <Trash2 size={14} />
             </button>
           </li>
         ))}
       </ul>
 
       <div className="import-section">
-        <input 
-          type="file" 
-          accept=".py,.txt" 
-          ref={fileInputRef} 
-          style={{display:'none'}} 
-          onChange={handleFileChange} 
+        <input
+          type="file"
+          accept=".py,.txt"
+          ref={fileInputRef}
+          style={{display:'none'}}
+          onChange={handleFileChange}
         />
-        <button className="import-btn" onClick={handleImportClick}> 
-          <Upload size={16} /> {t.importBtn} 
+        <button className="import-btn" onClick={handleImportClick}>
+          <Upload size={16} /> {t.importBtn}
         </button>
       </div>
     </div>

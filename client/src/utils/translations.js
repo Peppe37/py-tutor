@@ -28,7 +28,7 @@ export const translations = {
     promptDownload: "Nome del file da scaricare:",
     alertAiError: "Errore connessione AI.",
     fileSaved: "File salvato come",
-    
+
     // NUOVI PER LE TABS
     tabCode: "Codice",
     tabDesc: "Traccia & Chat",
