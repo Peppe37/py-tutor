@@ -10,28 +10,29 @@ jobs:
     name: Semantic Release
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+      contents: write # Serve per creare tag e commit
+      issues: write   # Serve per commentare le issue
+      pull-requests: write # Serve per i commenti sulle PR
 
     steps:
       - name: Checkout del codice
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          persist-credentials: false
+          fetch-depth: 0 # Fondamentale: scarica tutta la storia git per calcolare la versione
+          persist-credentials: false # Usa il GITHUB_TOKEN fornito dall'ambiente
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm' # Cacha le dipendenze per velocizzare le esecuzioni future
+
+      - name: Install Dependencies (Root only)
+        # --ignore-scripts impedisce che parta l'installazione del client (postinstall)
+        # risparmiando tempo e risorse, dato che qui ci serve solo semantic-release.
+        run: npm install --ignore-scripts
 
       - name: Run Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npx \
-          -p semantic-release \
-          -p @semantic-release/git \
-          -p @semantic-release/changelog \
-          semantic-release
+        run: npx semantic-release
