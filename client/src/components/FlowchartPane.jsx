@@ -10,12 +10,12 @@ mermaid.initialize({
   securityLevel: 'loose',
 });
 
-const FlowchartPane = ({ 
-  flowchartCode, 
-  setFlowchartCode, 
-  askAiToGenerateFlowchart, 
+const FlowchartPane = ({
+  flowchartCode,
+  setFlowchartCode,
+  askAiToGenerateFlowchart,
   isAiLoading,
-  theme 
+  theme
 }) => {
   const chartRef = useRef(null);
   const [svgContent, setSvgContent] = useState('');
@@ -52,9 +52,9 @@ const FlowchartPane = ({
         <div className="section-title">
             <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                 📐 Editor Mermaid
-                <button 
-                    className="ai-gen-btn" 
-                    onClick={askAiToGenerateFlowchart} 
+                <button
+                    className="ai-gen-btn"
+                    onClick={askAiToGenerateFlowchart}
                     disabled={isAiLoading}
                     title="Chiedi all'AI di generare il grafico dalla descrizione"
                 >
@@ -77,10 +77,10 @@ const FlowchartPane = ({
             {renderError ? (
                 <div className="render-error">{renderError}</div>
             ) : (
-                <div 
-                    ref={chartRef} 
+                <div
+                    ref={chartRef}
                     className="mermaid-output"
-                    dangerouslySetInnerHTML={{ __html: svgContent }} 
+                    dangerouslySetInnerHTML={{ __html: svgContent }}
                 />
             )}
         </div>

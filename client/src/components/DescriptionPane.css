@@ -1,12 +1,12 @@
 .desc-pane-layout {
   display: flex;
   flex: 1;
-  min-height: 0; 
+  min-height: 0;
   height: 65vh;
   gap: 20px;
-  
-  padding: 0; 
-  
+
+  padding: 0;
+
   overflow: hidden;
 }
 
@@ -127,11 +127,24 @@
   color: white;
   border: none;
   width: 40px;
+  height: 40px;
   border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: filter 0.2s;
+}
+
+.chat-input-area {
+  padding: 10px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 10px;
+  background-color: var(--bg-color);
+  flex-shrink: 0;
+  align-items: flex-end;
 }
 
 .send-btn:hover:not(:disabled) { filter: brightness(1.1); }
@@ -145,8 +158,8 @@
 
 /* Mobile */
 @media (max-width: 768px) {
-  .desc-pane-layout { 
-      flex-direction: column; 
+  .desc-pane-layout {
+      flex-direction: column;
       height: auto; /* Su mobile lascia che si allunghi */
   }
   .chat-section {

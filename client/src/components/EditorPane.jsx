@@ -1,33 +1,33 @@
 import React, { useMemo } from 'react';
 import Editor from '@monaco-editor/react';
-import './EditorPane.css'; 
+import './EditorPane.css';
 
-const EditorPane = ({ 
-  theme, 
-  code, 
-  setCode, 
-  handleEditorDidMount, 
-  showHints 
+const EditorPane = ({
+  theme,
+  code,
+  setCode,
+  handleEditorDidMount,
+  showHints
 }) => {
 
   const editorOptions = useMemo(() => ({
-    minimap: { enabled: false }, 
-    fontSize: 16, 
+    minimap: { enabled: false },
+    fontSize: 16,
     scrollBeyondLastLine: false,
     padding: { top: 20, bottom: 20 },
     automaticLayout: true,
     glyphMargin: true,
-    
-    quickSuggestions: showHints, 
-    suggestOnTriggerCharacters: showHints, 
+
+    quickSuggestions: showHints,
+    suggestOnTriggerCharacters: showHints,
     parameterHints: { enabled: showHints },
     wordBasedSuggestions: showHints,
     hover: { enabled: showHints },
 
     scrollbar: {
-      alwaysConsumeMouseWheel: false, 
+      alwaysConsumeMouseWheel: false,
     }
-  }), [showHints]); 
+  }), [showHints]);
 
   return (
     <div className="editor-pane">

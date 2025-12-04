@@ -1,8 +1,51 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { StepForward, SkipForward, Square, BrainCircuit } from 'lucide-react';
+import { StepForward, SkipForward, Square, BrainCircuit, Copy, Check } from 'lucide-react';
 import DebugPanel from './DebugPanel';
 import './OutputPane.css';
+
+// Componente personalizzato per il tag <pre> (blocchi di codice)
+const PreBlock = ({ children, ...props }) => {
+  const preRef = React.useRef(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (preRef.current) {
+        const text = preRef.current.innerText;
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', margin: '10px 0' }}>
+      <button
+        onClick={handleCopy}
+        style={{
+          position: 'absolute',
+          top: '5px',
+          right: '5px',
+          background: 'rgba(255,255,255,0.1)',
+          border: 'none',
+          borderRadius: '4px',
+          padding: '4px',
+          cursor: 'pointer',
+          color: copied ? 'var(--success-color)' : '#aaa',
+          display: 'flex',
+          alignItems: 'center',
+          zIndex: 5
+        }}
+        title="Copia codice"
+      >
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+      </button>
+      <pre ref={preRef} {...props} style={{paddingTop: '30px', overflowX: 'auto'}}>
+        {children}
+      </pre>
+    </div>
+  );
+};
 
 const OutputPane = ({
   t,
@@ -90,7 +133,7 @@ const OutputPane = ({
           <div className="ai-response">
             <strong>🎓 {t.tutorTitle}</strong>
             <div className="markdown-body" style={{userSelect: 'text'}}>
-                <ReactMarkdown components={{ code: CodeBlock }}>
+                <ReactMarkdown components={{ pre: PreBlock }}>
                     {aiExplanation}
                 </ReactMarkdown>
             </div>
