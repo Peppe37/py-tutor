@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/Peppe37/py-tutor/compare/v1.0.2...v1.0.3) (2025-12-05)
+
+
+### Bug Fixes
+
+* Merge pull request [#4](https://github.com/Peppe37/py-tutor/issues/4) from Peppe37/fix-matplotlib-webworker ([d5f4b24](https://github.com/Peppe37/py-tutor/commit/d5f4b24ca5909b38d9e621fcf778a4284957725f))
+
 ## [1.0.2](https://github.com/Peppe37/py-tutor/compare/v1.0.1...v1.0.2) (2025-12-05)
 
 
