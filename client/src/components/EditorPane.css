@@ -9,12 +9,48 @@
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
+  position: relative; /* Context for absolute positioning of toolbar */
+}
+
+.mobile-toolbar {
+  display: none; /* Hidden by default */
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  z-index: 20; /* Above editor */
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.toolbar-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-color);
+  color: var(--primary-color);
 }
 
 @media (max-width: 768px) {
   .editor-pane {
     height: 50dvh;
     min-height: 300px;
+  }
+
+  .mobile-toolbar {
+    display: flex; /* Visible on mobile */
   }
 
   /* Make sure editor content doesn't overflow horizontally in a weird way */
