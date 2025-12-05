@@ -108,7 +108,9 @@ const OutputPane = ({
       <div className="console-output">
         {output.length === 0 && !error && !debugTrace && <span style={{color:'#888', fontStyle:'italic'}}>{t.waitingOutput}</span>}
         {output.map((line, i) => (
-          <div key={i} className="log-line">{line}</div>
+          typeof line === 'object' && line.type === 'image'
+          ? <div key={i} className="plot-output"><img src={`data:image/png;base64,${line.content}`} alt="Plot" style={{maxWidth: '100%', borderRadius: '8px', marginTop: '10px'}} /></div>
+          : <div key={i} className="log-line">{line}</div>
         ))}
       </div>
 

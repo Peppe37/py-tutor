@@ -3,10 +3,11 @@ importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js");
 
 let pyodide = null;
 
+// Init function
 async function loadPyodideEngine() {
   try {
     pyodide = await loadPyodide();
-    await pyodide.loadPackage("micropip");
+    await pyodide.loadPackage(["micropip"]);
     self.postMessage({ type: "READY" });
   } catch (err) {
     self.postMessage({ type: "ERROR", payload: err.message });

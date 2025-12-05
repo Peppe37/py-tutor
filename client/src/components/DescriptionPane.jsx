@@ -138,7 +138,7 @@ const DescriptionPane = ({
             placeholder="Fai una domanda al Professore..."
             rows={1}
           />
-          <button className="send-btn" onClick={handleSend} disabled={isAiLoading}>
+          <button className="send-btn icon-btn" onClick={handleSend} disabled={isAiLoading} style={{width:'40px', height:'40px'}}>
             <Send size={18} />
           </button>
         </div>

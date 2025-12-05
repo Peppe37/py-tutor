@@ -71,6 +71,9 @@ function App() {
         setOutput(["Ready! 🚀"]);
       } else if (type === "STDOUT") {
         setOutput(prev => [...prev, payload]);
+      } else if (type === "PLOT") {
+        // Handle plot message (base64 png)
+        setOutput(prev => [...prev, { type: 'image', content: payload }]);
       } else if (type === "ERROR") {
         setError(payload);
         setIsRunning(false);
