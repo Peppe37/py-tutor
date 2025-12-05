@@ -119,6 +119,10 @@ self.onmessage = async (event) => {
       // Run auto-installer for packages not covered by loadPackagesFromImports (like seaborn)
       await pyodide.runPythonAsync(INSTALLER_CODE);
       pyodide.globals.set("USER_CODE", code);
+
+      // Pre-configure matplotlib if it's already installed (to avoid backend issues during import checks)
+      await pyodide.runPythonAsync(PYTHON_SETUP_CODE);
+
       await pyodide.runPythonAsync("await install_missing_imports(USER_CODE)");
 
       // Run setup code (patches matplotlib if present)
