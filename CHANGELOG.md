@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/Peppe37/py-tutor/compare/v1.1.1...v1.2.0) (2025-12-05)
+
+
+### Bug Fixes
+
+* Merge pull request [#7](https://github.com/Peppe37/py-tutor/issues/7) from Peppe37/mobile-ux-copy-paste ([4cf6e0e](https://github.com/Peppe37/py-tutor/commit/4cf6e0ead39807e69beb65ece1bfa8ca2b052ee0))
+
+
+### Features
+
+* add copy/paste toolbar for mobile editor ([8cc2022](https://github.com/Peppe37/py-tutor/commit/8cc2022f5c6f8ce0e6748c679653680e0e65b694))
+
 ## [1.1.1](https://github.com/Peppe37/py-tutor/compare/v1.1.0...v1.1.1) (2025-12-05)
 
 
