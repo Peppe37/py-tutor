@@ -23,6 +23,43 @@ const t = {
 };
 
 describe('OutputPane Component', () => {
+  it('renders text output correctly', () => {
+    const output = ['Line 1', 'Line 2'];
+    render(
+      <OutputPane
+        t={t}
+        isDebug={false}
+        isRunning={false}
+        output={output}
+        error={null}
+        cleanTraceback={(err) => err}
+      />
+    );
+    expect(screen.getByText('Line 1')).toBeInTheDocument();
+    expect(screen.getByText('Line 2')).toBeInTheDocument();
+  });
+
+  it('renders image output correctly', () => {
+    const output = [
+        'Text before',
+        { type: 'image', content: 'base64mock' }
+    ];
+    render(
+      <OutputPane
+        t={t}
+        isDebug={false}
+        isRunning={false}
+        output={output}
+        error={null}
+        cleanTraceback={(err) => err}
+      />
+    );
+    expect(screen.getByText('Text before')).toBeInTheDocument();
+    const img = screen.getByAltText('Plot');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'data:image/png;base64,base64mock');
+  });
+
   it('renders without crashing when aiExplanation contains no code', () => {
     render(
       <OutputPane

@@ -28,7 +28,9 @@ function App() {
   // --- STATE: EXECUTION & AI ---
   const [output, setOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
-  const [pyodide, setPyodide] = useState(null);
+  // Removed pyodide state, replaced with worker
+  const workerRef = useRef(null);
+  const [isWorkerReady, setIsWorkerReady] = useState(false);
 
   const [error, setError] = useState(null);
   const [aiExplanation, setAiExplanation] = useState(null);
@@ -57,49 +59,43 @@ function App() {
   // Sincronizza Ref
   useEffect(() => { codeRef.current = code; }, [code]);
 
-  // --- INIZIALIZZAZIONE PYODIDE (CON FIX MONACO) ---
+  // --- INIZIALIZZAZIONE WORKER PYODIDE ---
   useEffect(() => {
-    let mounted = true;
+    // Initialize Web Worker
+    workerRef.current = new Worker(new URL('./workers/pythonWorker.js', import.meta.url));
 
-    async function loadPyodideEngine() {
-      // Evita doppio caricamento
-      if (window.pyodideReady) return;
-
-      setOutput(["Loading Python environment..."]);
-      try {
-        // --- FIX CONFLITTO MONACO / PYODIDE ---
-        // Salviamo il loader AMD di Monaco
-        const amdDefine = window.define;
-        const amdRequire = window.require;
-
-        // Lo nascondiamo temporaneamente così Pyodide usa il suo loader
-        window.define = undefined;
-        window.require = undefined;
-
-        // Carichiamo Pyodide
-        const py = await window.loadPyodide();
-
-        // Ripristiniamo il loader di Monaco
-        window.define = amdDefine;
-        window.require = amdRequire;
-        // --------------------------------------
-
-        if (mounted) {
-          setPyodide(py);
-          window.pyodideReady = true;
-          setOutput(prev => ["Ready! 🚀"]);
-        }
-      } catch (err) {
-        if (mounted) {
-          console.error(err);
-          setOutput(prev => [...prev, "❌ Critical Error: Failed to load Pyodide."]);
-        }
+    workerRef.current.onmessage = (event) => {
+      const { type, payload } = event.data;
+      if (type === "READY") {
+        setIsWorkerReady(true);
+        setOutput(["Ready! 🚀"]);
+      } else if (type === "STDOUT") {
+        setOutput(prev => [...prev, payload]);
+      } else if (type === "PLOT") {
+        // Handle plot message (base64 png)
+        setOutput(prev => [...prev, { type: 'image', content: payload }]);
+      } else if (type === "ERROR") {
+        setError(payload);
+        setIsRunning(false);
+      } else if (type === "DONE") {
+        setIsRunning(false);
+      } else if (type === "DEBUG_RESULT") {
+         try {
+            const trace = JSON.parse(payload);
+            if (trace.length > 0) {
+               setDebugTrace(trace);
+               setCurrentStep(0);
+            } else {
+               setOutput(prev => [...prev, "Debug finished: No steps recorded."]);
+            }
+         } catch (e) {
+            setError("Error parsing debug trace: " + e.message);
+         }
+         setIsRunning(false);
       }
-    }
+    };
 
-    if (!pyodide) {
-        loadPyodideEngine();
-    }
+    setOutput(["Loading Python environment..."]);
 
     // Caricamento preferenze
     const localFiles = localStorage.getItem('pytutor_files');
@@ -108,7 +104,11 @@ function App() {
     const savedTheme = localStorage.getItem('pytutor_theme');
     if (savedTheme) setTheme(savedTheme);
 
-    return () => { mounted = false; };
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -131,6 +131,11 @@ function App() {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8010';
     const cleanErr = error ? (isDebug ? error : cleanTraceback(error)) : null;
 
+    // Costruisci il system prompt per guidare l'AI (Guide, don't write)
+    const systemInstruction = isFlowchartRequest
+        ? "Sei un esperto creatore di diagrammi Mermaid JS."
+        : "Sei un tutor di programmazione Python esperto e paziente. Il tuo obiettivo è guidare lo studente verso la soluzione SENZA scrivere il codice completo per lui. Dai suggerimenti, spiega i concetti, e aiuta a ragionare. Usa il codice fornito come contesto. Parla in italiano.";
+
     try {
         const payload = {
             message: userMessage,
@@ -138,7 +143,8 @@ function App() {
             error: cleanErr,
             description: description,
             flowchart: flowchartCode,
-            history: chatHistory
+            history: chatHistory,
+            system: systemInstruction // Add system instruction if API supports it, otherwise rely on the message prompt
         };
 
         const response = await axios.post(`${apiUrl}/chat`, payload);
@@ -160,11 +166,11 @@ function App() {
                 cleanCode = cleanCode.replace('mermaid', '').trim();
             }
 
-            // 3. Assicurati che inizi con "graph TD" o simili
-            if (!cleanCode.startsWith('graph') && !cleanCode.startsWith('flowchart')) {
-                // Se manca l'intestazione, la forziamo
-                cleanCode = `graph TD;\n${cleanCode}`;
-            }
+            // Remove 'graph TD;' if it's repeated
+            cleanCode = cleanCode.replace(/^graph TD;?/i, '').trim();
+
+            // 3. Ricostruisci con l'intestazione corretta
+            cleanCode = `graph TD;\n${cleanCode}`;
 
             // 4. Sanitize: Rimuove caratteri pericolosi che rompono il parser
             // (Es. parentesi tonde dentro le etichette non quotate rompono Mermaid)
@@ -230,13 +236,13 @@ function App() {
       Genera un grafico Mermaid.js (graph TD) che rappresenti la logica.
 
       REGOLE RIGIDE PER EVITARE ERRORI DI SINTASSI:
-      1. Inizia SEMPRE con "graph TD".
-      2. Usa ID semplici per i nodi (es. A, B, C).
-      3. IMPORTANTE: Qualsiasi testo dentro un nodo DEVE essere tra virgolette doppie.
+      1. Usa ID semplici per i nodi (es. A, B, C).
+      2. IMPORTANTE: Qualsiasi testo dentro un nodo DEVE essere tra virgolette doppie.
          ESEMPIO CORRETTO: A["Leggi input (x)"] --> B{"x > 10?"}
          ESEMPIO ERRATO: A[Leggi input (x)] --> B{x > 10?}
-      4. Non usare parentesi tonde () fuori dalle virgolette.
-      5. Rispondi SOLAMENTE con il blocco di codice.
+      3. Non usare parentesi tonde () o quadre [] dentro il testo del nodo se non sono tra virgolette.
+      4. Rispondi SOLAMENTE con il codice dentro al diagramma, NON includere "graph TD" all'inizio (lo aggiungo io).
+      5. Mantieni il diagramma semplice e lineare.
     `;
     callAiAgent(prompt, true);
   };
@@ -277,31 +283,31 @@ function App() {
   }, [breakpoints, currentStep, debugTrace]);
 
   // --- ESECUZIONE NORMALE ---
-  const runCode = useCallback(async () => {
-    if (!pyodide) return;
+  const runCode = useCallback(() => {
+    if (!isWorkerReady || !workerRef.current) return;
     setIsRunning(true);
     setDebugTrace(null);
     setError(null);
     setAiExplanation(null);
     setOutput([]);
-    const currentCode = codeRef.current;
-    try {
-      pyodide.setStdout({ batched: (msg) => setOutput(prev => [...prev, msg]) });
-      await pyodide.runPythonAsync(currentCode);
-    } catch (err) { setError(err.message); } finally { setIsRunning(false); }
-  }, [pyodide]);
+
+    workerRef.current.postMessage({
+      action: 'run',
+      code: codeRef.current
+    });
+  }, [isWorkerReady]);
 
   // --- ESECUZIONE DEBUG (TRACING) ---
-  const runDebug = useCallback(async () => {
-    if (!pyodide) return;
+  const runDebug = useCallback(() => {
+    if (!isWorkerReady || !workerRef.current) return;
     setIsRunning(true);
     setError(null);
     setAiExplanation(null);
     setOutput([]);
     setDebugTrace(null);
     const currentCode = codeRef.current;
-    try {
-        const tracerCode = `
+
+    const tracerCode = `
 import sys
 import json
 trace_data = []
@@ -322,12 +328,11 @@ except Exception as e: trace_data.append({"line": -1, "event": "exception", "mes
 finally: sys.settrace(None)
 json.dumps(trace_data)
 `;
-        const traceJson = await pyodide.runPythonAsync(tracerCode);
-        const trace = JSON.parse(traceJson);
-        if (trace.length > 0) { setDebugTrace(trace); setCurrentStep(0); }
-        else { setOutput(prev => [...prev, "Debug finished: No steps recorded."]); }
-    } catch (err) { setError(err.message); } finally { setIsRunning(false); }
-  }, [pyodide]);
+    workerRef.current.postMessage({
+      action: 'debug',
+      code: tracerCode
+    });
+  }, [isWorkerReady]);
 
   const debugNext = useCallback(() => { if (debugTrace && currentStep < debugTrace.length - 1) setCurrentStep(prev => prev + 1); }, [debugTrace, currentStep]);
   const debugPrev = useCallback(() => { if (debugTrace && currentStep > 0) setCurrentStep(prev => prev - 1); }, [debugTrace, currentStep]);
@@ -384,7 +389,7 @@ json.dumps(trace_data)
           setDebugTrace={setDebugTrace}
           runCode={runCode}
           runDebug={runDebug}
-          pyodide={pyodide}
+          pyodide={isWorkerReady}
           isRunning={isRunning}
           t={t}
         />

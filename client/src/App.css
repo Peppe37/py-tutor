@@ -154,5 +154,11 @@ body {
   .container {
     padding-left: 10px;
     padding-right: 10px;
+    padding-top: 15px;
+    padding-bottom: 80px; /* Extra space for bottom navigation/safe area */
+  }
+
+  .main-content {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
