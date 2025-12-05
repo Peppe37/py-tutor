@@ -16,6 +16,42 @@ async function loadPyodideEngine() {
 
 loadPyodideEngine();
 
+// Helper to handle plotting
+self.sendPlot = (data) => {
+  self.postMessage({ type: "PLOT", payload: data });
+};
+
+// Python setup code to patch matplotlib
+const PYTHON_SETUP_CODE = `
+import sys
+try:
+    import matplotlib
+    # Set backend to Agg to avoid DOM access
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import io
+    import base64
+    import js
+
+    def _custom_show():
+        # Save figure to buffer
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        # Encode to base64
+        img_str = base64.b64encode(buf.read()).decode('utf-8')
+        # Clear figure
+        plt.clf()
+        # Send to JS
+        js.sendPlot(img_str)
+
+    # Patch plt.show
+    plt.show = _custom_show
+except ImportError:
+    # Matplotlib not installed, skip patching
+    pass
+`;
+
 self.onmessage = async (event) => {
   const { action, code, packages } = event.data;
 
@@ -29,24 +65,28 @@ self.onmessage = async (event) => {
       // Clear previous stdout
       pyodide.setStdout({ batched: (msg) => self.postMessage({ type: "STDOUT", payload: msg }) });
 
-      // We don't want to use loadPackagesFromImports because it might be slow or try to load unneeded things.
-      // But for better UX, we might want to scan the code for imports.
-      // For now, let's rely on explicit package installation if needed,
-      // OR use pyodide.loadPackagesFromImports(code) if the user wants it auto-detected.
-      // Let's try auto-detection which is friendly.
+      // We load packages from imports first.
+      // This will install matplotlib if the user code imports it.
       await pyodide.loadPackagesFromImports(code);
+
+      // Run setup code (patches matplotlib if present)
+      // This is safe because if matplotlib was installed above, it patches it.
+      // If not, it catches ImportError and does nothing.
+      await pyodide.runPythonAsync(PYTHON_SETUP_CODE);
 
       await pyodide.runPythonAsync(code);
       self.postMessage({ type: "DONE" });
     }
     else if (action === "debug") {
-      // Debug logic is passed as a code string wrapper from the main thread
-      // so we treat it almost like run, but expect a JSON return.
        pyodide.setStdout({ batched: (msg) => self.postMessage({ type: "STDOUT", payload: msg }) });
 
        // Ensure packages are loaded for debug trace too
-       // (Though usually debug is on simple code)
+       // Note: loadPackagesFromImports might miss imports inside the stringified code of the debugger,
+       // but it's the best we can do without parsing the code manually.
        await pyodide.loadPackagesFromImports(code);
+
+       // Run setup code here too to avoid backend errors if matplotlib is used
+       await pyodide.runPythonAsync(PYTHON_SETUP_CODE);
 
        const result = await pyodide.runPythonAsync(code);
        self.postMessage({ type: "DEBUG_RESULT", payload: result });
