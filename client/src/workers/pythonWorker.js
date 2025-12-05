@@ -8,6 +8,15 @@ async function loadPyodideEngine() {
   try {
     pyodide = await loadPyodide();
     await pyodide.loadPackage(["micropip"]);
+
+    // Install and activate pyodide-http to patch urllib/requests
+    await pyodide.runPythonAsync(`
+        import micropip
+        await micropip.install('pyodide-http')
+        import pyodide_http
+        pyodide_http.patch_all()
+    `);
+
     self.postMessage({ type: "READY" });
   } catch (err) {
     self.postMessage({ type: "ERROR", payload: err.message });
