@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Peppe37/py-tutor/compare/v1.0.0...v1.0.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* Merge pull request [#2](https://github.com/Peppe37/py-tutor/issues/2) from Peppe37/jules-perf-mobile-worker ([b8a2b13](https://github.com/Peppe37/py-tutor/commit/b8a2b136e416c58f95306951784fa963df005601))
+
 # 1.0.0 (2025-12-04)
 
 
