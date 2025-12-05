@@ -1,3 +1,11 @@
+# [1.1.0](https://github.com/Peppe37/py-tutor/compare/v1.0.3...v1.1.0) (2025-12-05)
+
+
+### Features
+
+* add auto-installation for missing python packages in web worker ([39f8f54](https://github.com/Peppe37/py-tutor/commit/39f8f5433c346b66585ff9cfd68394f9aaa493c1))
+* added limited librery support ([17d38de](https://github.com/Peppe37/py-tutor/commit/17d38deeb9a9f2d305b2d065bc3909d4d3483ada))
+
 ## [1.0.3](https://github.com/Peppe37/py-tutor/compare/v1.0.2...v1.0.3) (2025-12-05)
 
 
