@@ -21,6 +21,44 @@ self.sendPlot = (data) => {
   self.postMessage({ type: "PLOT", payload: data });
 };
 
+const INSTALLER_CODE = `
+import ast
+import sys
+import micropip
+
+async def install_missing_imports(code):
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return
+
+    imports = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                pkg = alias.name.split('.')[0]
+                imports.add(pkg)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                pkg = node.module.split('.')[0]
+                imports.add(pkg)
+
+    missing = []
+    for pkg in imports:
+        try:
+            __import__(pkg)
+        except ImportError:
+            missing.append(pkg)
+
+    if missing:
+        print(f"Installing missing packages: {', '.join(missing)}...")
+        try:
+            await micropip.install(missing)
+            print("Installation complete.")
+        except Exception as e:
+            print(f"Warning: Failed to install some packages: {e}")
+`;
+
 // Python setup code to patch matplotlib
 const PYTHON_SETUP_CODE = `
 import sys
@@ -68,6 +106,11 @@ self.onmessage = async (event) => {
       // We load packages from imports first.
       // This will install matplotlib if the user code imports it.
       await pyodide.loadPackagesFromImports(code);
+
+      // Run auto-installer for packages not covered by loadPackagesFromImports (like seaborn)
+      await pyodide.runPythonAsync(INSTALLER_CODE);
+      pyodide.globals.set("USER_CODE", code);
+      await pyodide.runPythonAsync("await install_missing_imports(USER_CODE)");
 
       // Run setup code (patches matplotlib if present)
       // This is safe because if matplotlib was installed above, it patches it.
