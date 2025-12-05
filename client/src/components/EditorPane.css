@@ -16,4 +16,9 @@
     height: 50dvh;
     min-height: 300px;
   }
+
+  /* Make sure editor content doesn't overflow horizontally in a weird way */
+  .monaco-editor {
+    width: 100% !important;
+  }
 }

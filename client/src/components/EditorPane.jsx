@@ -29,6 +29,15 @@ const EditorPane = ({
     }
   }), [showHints]);
 
+  // Mobile optimization for Monaco
+  const handleEditorWillMount = (monaco) => {
+    // Check if mobile
+    if (window.innerWidth < 768) {
+       // Disable some heavy features for mobile?
+       // Monaco doesn't have a direct "mobile mode", but we can tweak settings via props
+    }
+  };
+
   return (
     <div className="editor-pane">
       <Editor
@@ -38,6 +47,7 @@ const EditorPane = ({
         value={code}
         onChange={setCode}
         onMount={handleEditorDidMount}
+        beforeMount={handleEditorWillMount}
         options={editorOptions}
       />
     </div>
