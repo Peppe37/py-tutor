@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Peppe37/py-tutor/compare/v1.1.0...v1.1.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* Merge pull request [#6](https://github.com/Peppe37/py-tutor/issues/6) from Peppe37/patch-pyodide-http-seaborn ([0a7b115](https://github.com/Peppe37/py-tutor/commit/0a7b1155992f26157d62391a9ffaa324ea5ac562))
+
 # [1.1.0](https://github.com/Peppe37/py-tutor/compare/v1.0.3...v1.1.0) (2025-12-05)
 
 
