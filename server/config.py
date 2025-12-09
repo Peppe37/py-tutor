@@ -12,6 +12,6 @@ OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3-coder:480b-cloud")
 
 # Convertiamo la stringa "true"/"false" in vero booleano Python
-DEBUG = str_to_bool(os.getenv("DEBUG", "true"))
+DEBUG = str_to_bool(os.getenv("DEBUG", "false"))
 
 PORT = os.getenv("PORT", "8010")

@@ -1,7 +1,7 @@
 import uvicorn
 import os
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 import config
 from agent import AgentManager
@@ -35,11 +35,11 @@ except Exception as e:
 
 # Nuovo Modello di Richiesta Completa
 class ChatRequest(BaseModel):
-    message: str          # La domanda dell'utente (o "Spiegami l'errore")
-    code: str             # Il codice nell'editor
-    error: str | None     # L'errore in console (opzionale)
-    description: str      # La traccia dell'esercizio
-    flowchart: str        # Il codice del grafico mermaid
+    message: str = Field(..., max_length=10000)          # La domanda dell'utente (o "Spiegami l'errore")
+    code: str = Field(..., max_length=50000)             # Il codice nell'editor
+    error: str | None = Field(None, max_length=10000)     # L'errore in console (opzionale)
+    description: str = Field(..., max_length=20000)      # La traccia dell'esercizio
+    flowchart: str = Field(..., max_length=50000)        # Il codice del grafico mermaid
     history: list         # Cronologia chat (opzionale, per il futuro)
 
 @app.post("/chat")
