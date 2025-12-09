@@ -1,3 +1,11 @@
+## [1.2.1](https://github.com/Peppe37/py-tutor/compare/v1.2.0...v1.2.1) (2025-12-09)
+
+
+### Bug Fixes
+
+* configure matplotlib backend before checking imports ([3516f6e](https://github.com/Peppe37/py-tutor/commit/3516f6ed80336c69b66890dbbec9b964db62b6bd))
+* Merge pull request [#8](https://github.com/Peppe37/py-tutor/issues/8) from Peppe37/fix-matplotlib-backend-worker ([b40e921](https://github.com/Peppe37/py-tutor/commit/b40e9216342d37460ba9d0b15d04f4a39d08fc9e))
+
 # [1.2.0](https://github.com/Peppe37/py-tutor/compare/v1.1.1...v1.2.0) (2025-12-05)
 
 
