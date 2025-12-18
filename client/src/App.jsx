@@ -80,18 +80,19 @@ function App() {
       } else if (type === "DONE") {
         setIsRunning(false);
       } else if (type === "DEBUG_RESULT") {
-         try {
-            const trace = JSON.parse(payload);
-            if (trace.length > 0) {
-               setDebugTrace(trace);
-               setCurrentStep(0);
-            } else {
-               setOutput(prev => [...prev, "Debug finished: No steps recorded."]);
-            }
-         } catch (e) {
-            setError("Error parsing debug trace: " + e.message);
-         }
-         setIsRunning(false);
+        try {
+          const trace = JSON.parse(payload);
+          if (trace.length > 0) {
+            setDebugTrace(trace);
+            setCurrentStep(0);
+          } else {
+            setOutput(prev => [...prev, "Debug finished: No steps recorded."]);
+          }
+        } catch (e) {
+          console.error("JSON Parse error:", e);
+          setError("Error parsing debug trace: " + e.message);
+        }
+        setIsRunning(false);
       }
     };
 
@@ -119,8 +120,9 @@ function App() {
   // --- HELPER PULIZIA ERRORE ---
   const cleanTraceback = useCallback((traceback) => {
     if (isDebug) return traceback;
+    if (!traceback) return "";
     const lines = traceback.split('\n');
-    const userCodeIndex = lines.findIndex(line => line.includes('File "<exec>"'));
+    const userCodeIndex = lines.findIndex(line => line.includes('File "<exec>"') || line.includes('File "<string>"') || line.includes('File "script.py"'));
     return userCodeIndex === -1 ? traceback : ["Traceback (most recent call last):", ...lines.slice(userCodeIndex)].join('\n');
   }, [isDebug]);
 
@@ -133,74 +135,74 @@ function App() {
 
     // Costruisci il system prompt per guidare l'AI (Guide, don't write)
     const systemInstruction = isFlowchartRequest
-        ? "Sei un esperto creatore di diagrammi Mermaid JS."
-        : "Sei un tutor di programmazione Python esperto e paziente. Il tuo obiettivo è guidare lo studente verso la soluzione SENZA scrivere il codice completo per lui. Dai suggerimenti, spiega i concetti, e aiuta a ragionare. Usa il codice fornito come contesto. Parla in italiano.";
+      ? "Sei un esperto creatore di diagrammi Mermaid JS."
+      : "Sei un tutor di programmazione Python esperto e paziente. Il tuo obiettivo è guidare lo studente verso la soluzione SENZA scrivere il codice completo per lui. Dai suggerimenti, spiega i concetti, e aiuta a ragionare. Usa il codice fornito come contesto. Parla in italiano.";
 
     try {
-        const payload = {
-            message: userMessage,
-            code: currentCode,
-            error: cleanErr,
-            description: description,
-            flowchart: flowchartCode,
-            history: chatHistory,
-            system: systemInstruction // Add system instruction if API supports it, otherwise rely on the message prompt
-        };
+      const payload = {
+        message: userMessage,
+        code: currentCode,
+        error: cleanErr,
+        description: description,
+        flowchart: flowchartCode,
+        history: chatHistory,
+        system: systemInstruction // Add system instruction if API supports it, otherwise rely on the message prompt
+      };
 
-        const response = await axios.post(`${apiUrl}/chat`, payload);
-        const reply = response.data.reply;
+      const response = await axios.post(`${apiUrl}/chat`, payload);
+      const reply = response.data.reply;
 
-        if (isFlowchartRequest) {
-            // --- PARSING AVANZATO PER MERMAID ---
-            let cleanCode = reply;
+      if (isFlowchartRequest) {
+        // --- PARSING AVANZATO PER MERMAID ---
+        let cleanCode = reply;
 
-            // 1. Estrai il contenuto se è in un blocco di codice markdown
-            const codeBlockMatch = reply.match(/```(?:mermaid)?([\s\S]*?)```/);
-            if (codeBlockMatch && codeBlockMatch[1]) {
-                cleanCode = codeBlockMatch[1];
-            }
-
-            // 2. Pulisci spazi extra e rimuovi "mermaid" se l'AI l'ha lasciato fuori dal backtick
-            cleanCode = cleanCode.trim();
-            if (cleanCode.startsWith('mermaid')) {
-                cleanCode = cleanCode.replace('mermaid', '').trim();
-            }
-
-            // Remove 'graph TD;' if it's repeated
-            cleanCode = cleanCode.replace(/^graph TD;?/i, '').trim();
-
-            // 3. Ricostruisci con l'intestazione corretta
-            cleanCode = `graph TD;\n${cleanCode}`;
-
-            // 4. Sanitize: Rimuove caratteri pericolosi che rompono il parser
-            // (Es. parentesi tonde dentro le etichette non quotate rompono Mermaid)
-            // Questa è una regex semplice, per casi complessi servirebbe un parser
-            // Ma aiuta a evitare crash banali.
-
-            setFlowchartCode(cleanCode);
-
-            setChatHistory(prev => [
-                ...prev,
-                { role: 'user', content: userMessage },
-                { role: 'assistant', content: "Ho generato un nuovo diagramma di flusso! 📐 Controlla la scheda Flowchart." }
-            ]);
-            setActiveTab('flowchart');
-
-        } else {
-            setChatHistory(prev => [
-                ...prev,
-                { role: 'user', content: userMessage },
-                { role: 'assistant', content: reply }
-            ]);
+        // 1. Estrai il contenuto se è in un blocco di codice markdown
+        const codeBlockMatch = reply.match(/```(?:mermaid)?([\s\S]*?)```/);
+        if (codeBlockMatch && codeBlockMatch[1]) {
+          cleanCode = codeBlockMatch[1];
         }
-        return reply;
+
+        // 2. Pulisci spazi extra e rimuovi "mermaid" se l'AI l'ha lasciato fuori dal backtick
+        cleanCode = cleanCode.trim();
+        if (cleanCode.startsWith('mermaid')) {
+          cleanCode = cleanCode.replace('mermaid', '').trim();
+        }
+
+        // Remove 'graph TD;' if it's repeated
+        cleanCode = cleanCode.replace(/^graph TD;?/i, '').trim();
+
+        // 3. Ricostruisci con l'intestazione corretta
+        cleanCode = `graph TD;\n${cleanCode}`;
+
+        // 4. Sanitize: Rimuove caratteri pericolosi che rompono il parser
+        // (Es. parentesi tonde dentro le etichette non quotate rompono Mermaid)
+        // Questa è una regex semplice, per casi complessi servirebbe un parser
+        // Ma aiuta a evitare crash banali.
+
+        setFlowchartCode(cleanCode);
+
+        setChatHistory(prev => [
+          ...prev,
+          { role: 'user', content: userMessage },
+          { role: 'assistant', content: "Ho generato un nuovo diagramma di flusso! 📐 Controlla la scheda Flowchart." }
+        ]);
+        setActiveTab('flowchart');
+
+      } else {
+        setChatHistory(prev => [
+          ...prev,
+          { role: 'user', content: userMessage },
+          { role: 'assistant', content: reply }
+        ]);
+      }
+      return reply;
 
     } catch (err) {
-        console.error(err);
-        alert(t.alertAiError || "Errore di connessione all'AI.");
-        return null;
+      console.error(err);
+      alert(t.alertAiError || "Errore di connessione all'AI.");
+      return null;
     } finally {
-        setLoadingAi(false);
+      setLoadingAi(false);
     }
   };
 
@@ -209,16 +211,16 @@ function App() {
     setLoadingAi(true);
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8010';
     try {
-        const cleanErr = isDebug ? error : cleanTraceback(error);
-        const response = await axios.post(`${apiUrl}/chat`, {
-            message: "Spiegami questo errore e come risolverlo: " + cleanErr,
-            code: codeRef.current,
-            error: cleanErr,
-            description: description,
-            flowchart: flowchartCode,
-            history: []
-        });
-        setAiExplanation(response.data.reply);
+      const cleanErr = isDebug ? error : cleanTraceback(error);
+      const response = await axios.post(`${apiUrl}/chat`, {
+        message: "Spiegami questo errore e come risolverlo: " + cleanErr,
+        code: codeRef.current,
+        error: cleanErr,
+        description: description,
+        flowchart: flowchartCode,
+        history: []
+      });
+      setAiExplanation(response.data.reply);
     } catch (err) { alert(t.alertAiError); }
     finally { setLoadingAi(false); }
   }, [error, description, flowchartCode, isDebug, cleanTraceback, t]);
@@ -255,8 +257,8 @@ function App() {
       if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
         const lineNumber = e.target.position.lineNumber;
         setBreakpoints(prev => {
-            const exists = prev.includes(lineNumber);
-            return exists ? prev.filter(l => l !== lineNumber) : [...prev, lineNumber];
+          const exists = prev.includes(lineNumber);
+          return exists ? prev.filter(l => l !== lineNumber) : [...prev, lineNumber];
         });
       }
     });
@@ -272,12 +274,12 @@ function App() {
       });
     });
     if (debugTrace && debugTrace[currentStep]) {
-        const currentLine = debugTrace[currentStep].line;
-        newDecorations.push({
-            range: new monacoRef.current.Range(currentLine, 1, currentLine, 1),
-            options: { isWholeLine: true, className: 'debug-current-line' }
-        });
-        editorRef.current.revealLineInCenter(currentLine);
+      const currentLine = debugTrace[currentStep].line;
+      newDecorations.push({
+        range: new monacoRef.current.Range(currentLine, 1, currentLine, 1),
+        options: { isWholeLine: true, className: 'debug-current-line' }
+      });
+      editorRef.current.revealLineInCenter(currentLine);
     }
     decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, newDecorations);
   }, [breakpoints, currentStep, debugTrace]);
@@ -354,9 +356,9 @@ json.dumps(trace_data)
   const handleDownload = useCallback(() => { const currentCode = codeRef.current; const filename = prompt(t.promptDownload, "main.py"); if (!filename) return; const blob = new Blob([currentCode], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); }, [t]);
 
   const handleImportClick = useCallback(() => fileInputRef.current.click(), []);
-  const handleFileChange = useCallback((e) => { const file = e.target.files[0]; if(!file)return; const r = new FileReader(); r.onload=ev=>{setCode(ev.target.result);setIsSidebarOpen(false)}; r.readAsText(file); e.target.value=null; }, []);
-  const loadSavedFile = useCallback((content) => { if(confirm(t.confirmOverride)) { setCode(content); if(window.innerWidth<768)setIsSidebarOpen(false); }}, [t]);
-  const deleteSavedFile = useCallback((e, id) => { e.stopPropagation(); if(confirm(t.confirmDelete)){ setSavedFiles(prev => { const u = prev.filter(f=>f.id!==id); localStorage.setItem('pytutor_files', JSON.stringify(u)); return u; }); }}, [t]);
+  const handleFileChange = useCallback((e) => { const file = e.target.files[0]; if (!file) return; const r = new FileReader(); r.onload = ev => { setCode(ev.target.result); setIsSidebarOpen(false) }; r.readAsText(file); e.target.value = null; }, []);
+  const loadSavedFile = useCallback((content) => { if (confirm(t.confirmOverride)) { setCode(content); if (window.innerWidth < 768) setIsSidebarOpen(false); } }, [t]);
+  const deleteSavedFile = useCallback((e, id) => { e.stopPropagation(); if (confirm(t.confirmDelete)) { setSavedFiles(prev => { const u = prev.filter(f => f.id !== id); localStorage.setItem('pytutor_files', JSON.stringify(u)); return u; }); } }, [t]);
 
   return (
     <div className="main-layout">
@@ -370,6 +372,13 @@ json.dumps(trace_data)
         fileInputRef={fileInputRef}
         handleFileChange={handleFileChange}
         t={t}
+        // Mobile Actions Props
+        toggleTheme={toggleTheme}
+        theme={theme}
+        toggleLang={toggleLang}
+        lang={lang}
+        handleSave={handleSave}
+        handleDownload={handleDownload}
       />
 
       <div className="main-content">
@@ -399,53 +408,53 @@ json.dumps(trace_data)
         <div className="container">
 
           {/* TAB 1: CODICE (Editor + Output) */}
-          <div style={{display: activeTab === 'code' ? 'flex' : 'none', flexDirection: 'column', flex: 1, gap: '20px'}}>
+          <div style={{ display: activeTab === 'code' ? 'flex' : 'none', flexDirection: 'column', flex: 1, gap: '20px' }}>
             <EditorPane
-                theme={theme}
-                code={code}
-                setCode={setCode}
-                handleEditorDidMount={handleEditorDidMount}
-                showHints={showHints}
+              theme={theme}
+              code={code}
+              setCode={setCode}
+              handleEditorDidMount={handleEditorDidMount}
+              showHints={showHints}
             />
             <OutputPane
-                t={t}
-                isDebug={isDebug}
-                isRunning={isRunning}
-                debugTrace={debugTrace}
-                currentStep={currentStep}
-                debugPrev={debugPrev}
-                debugNext={debugNext}
-                debugContinue={debugContinue}
-                debugStop={debugStop}
-                output={output}
-                error={error}
-                cleanTraceback={cleanTraceback}
-                aiExplanation={aiExplanation}
-                askTutor={askTutorError}
-                loadingAi={loadingAi}
+              t={t}
+              isDebug={isDebug}
+              isRunning={isRunning}
+              debugTrace={debugTrace}
+              currentStep={currentStep}
+              debugPrev={debugPrev}
+              debugNext={debugNext}
+              debugContinue={debugContinue}
+              debugStop={debugStop}
+              output={output}
+              error={error}
+              cleanTraceback={cleanTraceback}
+              aiExplanation={aiExplanation}
+              askTutor={askTutorError}
+              loadingAi={loadingAi}
             />
           </div>
 
           {/* TAB 2: DESCRIZIONE & CHAT */}
-          <div style={{display: activeTab === 'description' ? 'flex' : 'none', flex: 1}}>
+          <div style={{ display: activeTab === 'description' ? 'flex' : 'none', flex: 1 }}>
             <DescriptionPane
-                description={description}
-                setDescription={setDescription}
-                chatHistory={chatHistory}
-                sendChatMessage={sendChatMessage}
-                isAiLoading={loadingAi}
-                t={t}
+              description={description}
+              setDescription={setDescription}
+              chatHistory={chatHistory}
+              sendChatMessage={sendChatMessage}
+              isAiLoading={loadingAi}
+              t={t}
             />
           </div>
 
           {/* TAB 3: FLOWCHART */}
-          <div style={{display: activeTab === 'flowchart' ? 'flex' : 'none', flex: 1}}>
+          <div style={{ display: activeTab === 'flowchart' ? 'flex' : 'none', flex: 1 }}>
             <FlowchartPane
-                flowchartCode={flowchartCode}
-                setFlowchartCode={setFlowchartCode}
-                askAiToGenerateFlowchart={askAiToGenerateFlowchart}
-                isAiLoading={loadingAi}
-                theme={theme}
+              flowchartCode={flowchartCode}
+              setFlowchartCode={setFlowchartCode}
+              askAiToGenerateFlowchart={askAiToGenerateFlowchart}
+              isAiLoading={loadingAi}
+              theme={theme}
             />
           </div>
 

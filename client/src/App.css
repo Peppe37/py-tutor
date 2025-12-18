@@ -14,7 +14,8 @@
   --error-color: #ff5555;
   --warning-color: #f59e0b;
   --success-color: #10b981;
-  --hover-bg: rgba(255, 255, 255, 0.05); /* Nuovo per i tabs */
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  /* Nuovo per i tabs */
 }
 
 /* LIGHT THEME VARIABLES */
@@ -28,7 +29,8 @@
   --terminal-bg: #ffffff;
   --error-color: #dc2626;
   --warning-color: #d97706;
-  --hover-bg: rgba(0, 0, 0, 0.05); /* Nuovo per i tabs */
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  /* Nuovo per i tabs */
 }
 
 body {
@@ -38,7 +40,8 @@ body {
   /* RIMOSSO position: fixed che rompeva lo scroll */
   height: 100vh;
   width: 100%;
-  overflow: hidden; /* Manteniamo hidden qui per evitare doppia scrollbar */
+  overflow: hidden;
+  /* Manteniamo hidden qui per evitare doppia scrollbar */
 }
 
 #root {
@@ -138,13 +141,16 @@ body {
   border-color: #d1d5db;
   color: #4b5563;
 }
+
 [data-theme="light"] .icon-btn:hover {
   background-color: #f3f4f6;
   color: #000;
 }
+
 [data-theme="light"] .icon-btn.active {
   background-color: rgba(79, 70, 229, 0.1);
 }
+
 [data-theme="light"] .icon-btn.active-red {
   background-color: rgba(220, 38, 38, 0.1);
 }
@@ -154,8 +160,13 @@ body {
   .container {
     padding-left: 10px;
     padding-right: 10px;
-    padding-top: 15px;
-    padding-bottom: 80px; /* Extra space for bottom navigation/safe area */
+    padding-top: 10px;
+    padding-bottom: 20px;
+  }
+
+  .container>* {
+    min-width: 0;
+    /* Fix flexbox overflow */
   }
 
   .main-content {

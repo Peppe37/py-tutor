@@ -57,23 +57,24 @@ const Header = ({
     <div className="header">
       <div className="header-left">
         <button className="menu-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-          {isSidebarOpen ? <X size={24}/> : <Menu size={24}/>}
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
         {/* TITOLO CON LOGO */}
         <div className="brand-container">
-            <PythonLogoSvg />
-            <h1>
-                <span style={{color: '#306998'}}>Py</span>
-                <span style={{color: '#FFD43B'}}>Tutor</span>
-                <span style={{color: '#8d8d8dff'}}> AI</span>
-            </h1>
+          <PythonLogoSvg />
+          <h1>
+            <span style={{ color: '#306998' }}>Py</span>
+            <span style={{ color: '#FFD43B' }}>Tutor</span>
+            <span style={{ color: '#8d8d8dff' }}> AI</span>
+          </h1>
         </div>
       </div>
 
       <div className="controls">
-          <button className="icon-btn" onClick={toggleLang} title="Lang" style={{width:'auto', padding:'0 10px', fontSize:'0.8rem', fontWeight:'bold'}}>
-            <Languages size={18} style={{marginRight:5}}/> {lang.toUpperCase()}
+        <div className="desktop-only-controls">
+          <button className="icon-btn" onClick={toggleLang} title="Lang" style={{ width: 'auto', padding: '0 10px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+            <Languages size={18} style={{ marginRight: 5 }} /> {lang.toUpperCase()}
           </button>
 
           <button className="icon-btn" onClick={toggleTheme}>
@@ -91,32 +92,33 @@ const Header = ({
           </button>
 
           <div className="divider"></div>
+        </div>
 
-          <button
-            className={`icon-btn ${showHints ? 'active' : ''}`}
-            onClick={() => setShowHints(!showHints)}
-            title={t.hints}
-          >
-            {showHints ? <Lightbulb size={20} className="icon-yellow"/> : <LightbulbOff size={20} />}
-          </button>
+        <button
+          className={`icon-btn ${showHints ? 'active' : ''}`}
+          onClick={() => setShowHints(!showHints)}
+          title={t.hints}
+        >
+          {showHints ? <Lightbulb size={20} className="icon-yellow" /> : <LightbulbOff size={20} />}
+        </button>
 
-          <button
-            className={`icon-btn ${isDebug ? 'active-red' : ''}`}
-            onClick={() => {setIsDebug(!isDebug); setDebugTrace(null);}}
-            title={t.debug}
-          >
-            <Bug size={20} />
-          </button>
+        <button
+          className={`icon-btn ${isDebug ? 'active-red' : ''}`}
+          onClick={() => { setIsDebug(!isDebug); setDebugTrace(null); }}
+          title={t.debug}
+        >
+          <Bug size={20} />
+        </button>
 
-          <button
-            onClick={isDebug ? runDebug : runCode}
-            disabled={!pyodide || isRunning}
-            className="icon-btn play-btn"
-            title={isDebug ? t.debugBtn : t.runBtn}
-            style={{backgroundColor: isDebug ? 'var(--warning-color)' : 'var(--accent-color)'}}
-          >
-             {isRunning ? '...' : <Play size={24} fill="white" />}
-          </button>
+        <button
+          onClick={isDebug ? runDebug : runCode}
+          disabled={!pyodide || isRunning}
+          className="icon-btn play-btn"
+          title={isDebug ? t.debugBtn : t.runBtn}
+          style={{ backgroundColor: isDebug ? 'var(--warning-color)' : 'var(--accent-color)' }}
+        >
+          {isRunning ? '...' : <Play size={24} fill="white" />}
+        </button>
       </div>
     </div>
   );

@@ -98,22 +98,69 @@
   background-color: #444;
 }
 
+/* Mobile Footer Styles */
+.sidebar-mobile-footer {
+  display: none;
+  /* Hidden by default on desktop */
+  padding: 15px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--surface-color);
+}
+
+.mobile-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mobile-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background-color: #2a2a2a;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.mobile-action-btn:hover {
+  background-color: #333;
+}
+
 /* Light Theme Overrides */
 [data-theme="light"] .file-item:hover {
   background-color: #e5e7eb;
   color: #000;
 }
+
 [data-theme="light"] .import-section {
   background-color: #f3f4f6;
   border-top: 1px solid #e5e7eb;
 }
+
 [data-theme="light"] .import-btn {
   background-color: #ffffff;
   border: 1px solid #d1d5db;
   color: #1f2937;
 }
+
 [data-theme="light"] .import-btn:hover {
   background-color: #e5e7eb;
+}
+
+[data-theme="light"] .sidebar-mobile-footer {
+  background-color: #f9fafb;
+}
+
+[data-theme="light"] .mobile-action-btn {
+  background-color: #ffffff;
+  border-color: #d1d5db;
+  color: #4b5563;
 }
 
 /* Mobile Responsiveness */
@@ -132,5 +179,10 @@
   .sidebar.closed {
     margin-left: 0;
     transform: translateX(-100%);
+  }
+
+  .sidebar-mobile-footer {
+    display: block;
+    /* Show on mobile */
   }
 }

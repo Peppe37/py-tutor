@@ -25,7 +25,18 @@
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
-  padding-bottom: 2px; /* Un po' di respiro extra per i descender */
+  padding-bottom: 2px;
+  /* Un po' di respiro extra per i descender */
+}
+
+.brand-container h1 {
+  font-size: 1.6rem;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  /* MODIFICA: Aumentato line-height per ospitare la 'y' */
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .python-logo-svg {
@@ -48,16 +59,6 @@
 
 .menu-btn:hover {
   background-color: #333;
-}
-
-h1 {
-  font-size: 1.6rem;
-  margin: 0;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  /* MODIFICA: Aumentato line-height per ospitare la 'y' */
-  line-height: 1.2;
-  white-space: nowrap;
 }
 
 .controls {
@@ -87,6 +88,12 @@ h1 {
   background-color: #535bf2;
 }
 
+.desktop-only-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Light Theme Overrides */
 [data-theme="light"] .menu-btn:hover {
   background-color: #e5e7eb;
@@ -105,43 +112,15 @@ h1 {
     font-size: 1.3rem;
   }
 
-  .controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-/* ... codice precedente ... */
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .header {
-    height: auto;
-    flex-wrap: wrap;
-    gap: 15px;
-    padding: 10px 15px;
-  }
-
-  .brand-container h1 {
-    font-size: 1.3rem;
-  }
-
-  .controls {
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 8px; /* Spazio per la scrollbar */
-    padding-left: 2px;
-    padding-right: 2px;
-    justify-content: flex-start; /* Allinea a sinistra se scrolla */
-    -webkit-overflow-scrolling: touch;
-
-    /* Nasconde scrollbar ma mantiene funzionalità */
-    scrollbar-width: none;
-  }
-
-  .controls::-webkit-scrollbar {
+  .brand-container h1 span:last-child {
     display: none;
   }
-}
+
+  .desktop-only-controls {
+    display: none;
+  }
+
+  .controls {
+    gap: 8px;
+  }
 }
