@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/Peppe37/py-tutor/compare/v1.2.1...v1.2.2) (2025-12-18)
+
+
+### Bug Fixes
+
+* mobile ui/ux fix ([3cc5345](https://github.com/Peppe37/py-tutor/commit/3cc5345bd18d7e5e912a66fdb5cd6e7ec94f02c0))
+
 ## [1.2.1](https://github.com/Peppe37/py-tutor/compare/v1.2.0...v1.2.1) (2025-12-09)
 
 
