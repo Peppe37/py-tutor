@@ -36,7 +36,8 @@ self.sendPlot = (data) => {
 // JS function called by Python to get input
 self.blockingInput = (prompt) => {
   if (!sharedBufferInt32) {
-    return ""; // Fallback if no buffer
+    self.postMessage({ type: "STDOUT", payload: "DEBUG: blockingInput called but no Shared Buffer!\n" });
+    return "debug_override_no_buffer";
   }
 
   // 1. Send request to main thread
@@ -53,8 +54,10 @@ self.blockingInput = (prompt) => {
   // 4. Read data
   const len = sharedBufferInt32[1];
   const bytes = sharedBufferUint8.subarray(8, 8 + len);
+  // Create a copy to satisfy TextDecoder (cannot decode shared buffer directly)
+  const bytesCopy = new Uint8Array(bytes);
   const decoder = new TextDecoder();
-  return decoder.decode(bytes);
+  return decoder.decode(bytesCopy);
 };
 
 const INSTALLER_CODE = `
@@ -142,9 +145,8 @@ self.onmessage = async (event) => {
   // Intercept INIT_SHARED_BUFFER before the main handler if possible, 
   // or just handle it inside the main handler.
   // Since we overwrote onmessage, let's merge logic.
-  const { type, buffer } = event.data;
-  if (type === "INIT_SHARED_BUFFER") {
-    sharedBuffer = buffer;
+  if (event.data.type === "INIT_SHARED_BUFFER") {
+    sharedBuffer = event.data.buffer;
     sharedBufferInt32 = new Int32Array(sharedBuffer);
     sharedBufferUint8 = new Uint8Array(sharedBuffer);
     return;

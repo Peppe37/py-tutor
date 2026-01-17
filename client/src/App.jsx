@@ -106,13 +106,20 @@ function App() {
 
 
     // Initialize SharedArrayBuffer for blocking input
-    // 1024 bytes should be enough for simple inputs
-    // Structure: [flag (int32), length (int32), ...charCodes]
-    const sab = new SharedArrayBuffer(1024);
-    setSharedBuffer(sab);
-
-    // Send the buffer to the worker (handled in worker init)
-    workerRef.current.postMessage({ type: "INIT_SHARED_BUFFER", buffer: sab });
+    if (typeof SharedArrayBuffer !== 'undefined') {
+      try {
+        const sab = new SharedArrayBuffer(1024);
+        setSharedBuffer(sab);
+        // console.log("App: Created SharedArrayBuffer and sending to worker");
+        workerRef.current.postMessage({ type: "INIT_SHARED_BUFFER", buffer: sab });
+      } catch (e) {
+        console.warn("SharedArrayBuffer creation failed:", e);
+        setOutput(prev => [...prev, "ERROR: SharedArrayBuffer failed (Secure Context issue?)"]);
+      }
+    } else {
+      console.warn("SharedArrayBuffer not supported.");
+      setOutput(prev => [...prev, "Warning: Input() not supported in this environment (Security/Headers)."]);
+    }
 
     setOutput(["Loading Python environment..."]);
 
