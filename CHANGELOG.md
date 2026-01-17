@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/Peppe37/py-tutor/compare/v1.2.2...v1.2.3) (2026-01-17)
+
+
+### Bug Fixes
+
+* input ([3daceef](https://github.com/Peppe37/py-tutor/commit/3daceef5a11dfc54fd82e3252aef2c5cead10f60))
+
 ## [1.2.2](https://github.com/Peppe37/py-tutor/compare/v1.2.1...v1.2.2) (2025-12-18)
 
 
