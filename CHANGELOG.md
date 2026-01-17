@@ -1,3 +1,10 @@
+## [1.2.5](https://github.com/Peppe37/py-tutor/compare/v1.2.4...v1.2.5) (2026-01-17)
+
+
+### Bug Fixes
+
+* nginx ([656892a](https://github.com/Peppe37/py-tutor/commit/656892a3583583e51cc0c1a349fb7dd77e20d02c))
+
 ## [1.2.4](https://github.com/Peppe37/py-tutor/compare/v1.2.3...v1.2.4) (2026-01-17)
 
 
