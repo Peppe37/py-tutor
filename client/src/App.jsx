@@ -10,6 +10,7 @@ import OutputPane from './components/OutputPane';
 import Tabs from './components/Tabs';
 import DescriptionPane from './components/DescriptionPane';
 import FlowchartPane from './components/FlowchartPane';
+import InputModal from './components/InputModal';
 
 // Import Utils
 import { translations } from './utils/translations';
@@ -29,6 +30,10 @@ function App() {
   const [output, setOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   // Removed pyodide state, replaced with worker
+  /* Shared Array Buffer for blocking input */
+  const [sharedBuffer, setSharedBuffer] = useState(null);
+  const [inputRequest, setInputRequest] = useState({ isOpen: false, message: "" });
+
   const workerRef = useRef(null);
   const [isWorkerReady, setIsWorkerReady] = useState(false);
 
@@ -77,6 +82,8 @@ function App() {
       } else if (type === "ERROR") {
         setError(payload);
         setIsRunning(false);
+      } else if (type === "INPUT_REQUEST") {
+        setInputRequest({ isOpen: true, message: payload });
       } else if (type === "DONE") {
         setIsRunning(false);
       } else if (type === "DEBUG_RESULT") {
@@ -95,6 +102,17 @@ function App() {
         setIsRunning(false);
       }
     };
+
+
+
+    // Initialize SharedArrayBuffer for blocking input
+    // 1024 bytes should be enough for simple inputs
+    // Structure: [flag (int32), length (int32), ...charCodes]
+    const sab = new SharedArrayBuffer(1024);
+    setSharedBuffer(sab);
+
+    // Send the buffer to the worker (handled in worker init)
+    workerRef.current.postMessage({ type: "INIT_SHARED_BUFFER", buffer: sab });
 
     setOutput(["Loading Python environment..."]);
 
@@ -460,7 +478,38 @@ json.dumps(trace_data)
 
         </div>
       </div>
-    </div>
+
+
+      <InputModal
+        isOpen={inputRequest.isOpen}
+        message={inputRequest.message}
+        onSubmit={(value) => {
+          if (!sharedBuffer || !workerRef.current) return;
+
+          const int32View = new Int32Array(sharedBuffer);
+          const encoded = new TextEncoder().encode(value);
+
+          // Write content to buffer skipping first 8 bytes (flag + length)
+          // We limit input to buffer size - 8
+          const maxBytes = sharedBuffer.byteLength - 8;
+          const bytesToWrite = encoded.slice(0, maxBytes);
+
+          const uint8View = new Uint8Array(sharedBuffer);
+          uint8View.set(bytesToWrite, 8);
+
+          // Set length
+          int32View[1] = bytesToWrite.length;
+
+          // Set flag to 1 (DATA_READY)
+          Atomics.store(int32View, 0, 1);
+
+          // Notify the worker
+          Atomics.notify(int32View, 0);
+
+          setInputRequest({ isOpen: false, message: "" });
+        }}
+      />
+    </div >
   )
 }
 

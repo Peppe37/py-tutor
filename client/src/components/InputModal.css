@@ -1,0 +1,65 @@
+.input-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.input-modal-content {
+    background-color: var(--surface-color, #1e1e1e);
+    padding: 2rem;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color, #333);
+}
+
+.input-modal-content h3 {
+    margin-top: 0;
+    color: var(--text-primary, #fff);
+    margin-bottom: 1rem;
+}
+
+.input-modal-content p {
+    color: var(--text-secondary, #ccc);
+    margin-bottom: 1.5rem;
+}
+
+.input-modal-field {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color, #444);
+    background-color: var(--bg-color, #2d2d2d);
+    color: var(--text-primary, #fff);
+    font-size: 1rem;
+}
+
+.input-modal-field:focus {
+    outline: none;
+    border-color: var(--primary-color, #007bff);
+}
+
+.input-modal-submit {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--primary-color, #007bff);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.input-modal-submit:hover {
+    background-color: var(--primary-hover, #0056b3);
+}

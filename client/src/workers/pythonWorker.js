@@ -2,6 +2,9 @@
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js");
 
 let pyodide = null;
+let sharedBuffer = null;
+let sharedBufferInt32 = null;
+let sharedBufferUint8 = null;
 
 // Init function
 async function loadPyodideEngine() {
@@ -28,6 +31,30 @@ loadPyodideEngine();
 // Helper to handle plotting
 self.sendPlot = (data) => {
   self.postMessage({ type: "PLOT", payload: data });
+};
+
+// JS function called by Python to get input
+self.blockingInput = (prompt) => {
+  if (!sharedBufferInt32) {
+    return ""; // Fallback if no buffer
+  }
+
+  // 1. Send request to main thread
+  self.postMessage({ type: "INPUT_REQUEST", payload: prompt || "" });
+
+  // 2. Reset flag to 0
+  Atomics.store(sharedBufferInt32, 0, 0);
+
+  // 3. Wait for flag to become 1
+  // Atomics.wait(typedArray, index, value) waits until the value at index changes from `value`.
+  // So we wait while it is 0.
+  Atomics.wait(sharedBufferInt32, 0, 0);
+
+  // 4. Read data
+  const len = sharedBufferInt32[1];
+  const bytes = sharedBufferUint8.subarray(8, 8 + len);
+  const decoder = new TextDecoder();
+  return decoder.decode(bytes);
 };
 
 const INSTALLER_CODE = `
@@ -97,9 +124,38 @@ try:
 except ImportError:
     # Matplotlib not installed, skip patching
     pass
+    pass
+
+# Patch input() using the JS blocking function
+import builtins
+import js
+
+def _custom_input(prompt=""):
+    return js.blockingInput(prompt)
+
+builtins.input = _custom_input
 `;
 
+
+
 self.onmessage = async (event) => {
+  // Intercept INIT_SHARED_BUFFER before the main handler if possible, 
+  // or just handle it inside the main handler.
+  // Since we overwrote onmessage, let's merge logic.
+  const { type, buffer } = event.data;
+  if (type === "INIT_SHARED_BUFFER") {
+    sharedBuffer = buffer;
+    sharedBufferInt32 = new Int32Array(sharedBuffer);
+    sharedBufferUint8 = new Uint8Array(sharedBuffer);
+    return;
+  }
+
+  // Delegate to original logic for other actions
+  handleMessage(event);
+};
+
+// Move original onmessage to a named function
+const handleMessage = async (event) => {
   const { action, code, packages } = event.data;
 
   if (!pyodide) {
@@ -134,23 +190,23 @@ self.onmessage = async (event) => {
       self.postMessage({ type: "DONE" });
     }
     else if (action === "debug") {
-       pyodide.setStdout({ batched: (msg) => self.postMessage({ type: "STDOUT", payload: msg }) });
+      pyodide.setStdout({ batched: (msg) => self.postMessage({ type: "STDOUT", payload: msg }) });
 
-       // Ensure packages are loaded for debug trace too
-       // Note: loadPackagesFromImports might miss imports inside the stringified code of the debugger,
-       // but it's the best we can do without parsing the code manually.
-       await pyodide.loadPackagesFromImports(code);
+      // Ensure packages are loaded for debug trace too
+      // Note: loadPackagesFromImports might miss imports inside the stringified code of the debugger,
+      // but it's the best we can do without parsing the code manually.
+      await pyodide.loadPackagesFromImports(code);
 
-       // Run setup code here too to avoid backend errors if matplotlib is used
-       await pyodide.runPythonAsync(PYTHON_SETUP_CODE);
+      // Run setup code here too to avoid backend errors if matplotlib is used
+      await pyodide.runPythonAsync(PYTHON_SETUP_CODE);
 
-       const result = await pyodide.runPythonAsync(code);
-       self.postMessage({ type: "DEBUG_RESULT", payload: result });
+      const result = await pyodide.runPythonAsync(code);
+      self.postMessage({ type: "DEBUG_RESULT", payload: result });
     }
     else if (action === "install") {
-        const micropip = pyodide.pyimport("micropip");
-        await micropip.install(packages);
-        self.postMessage({ type: "INSTALLED", payload: packages });
+      const micropip = pyodide.pyimport("micropip");
+      await micropip.install(packages);
+      self.postMessage({ type: "INSTALLED", payload: packages });
     }
   } catch (err) {
     self.postMessage({ type: "ERROR", payload: err.message });
